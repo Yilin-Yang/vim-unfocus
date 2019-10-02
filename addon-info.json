@@ -1,0 +1,12 @@
+{
+  "name": "vim-unfocus",
+  "description": "Change window- and buffer-local settings on leave/reenter.",
+  "version": "0.0.0",
+  "author": "Yilin Yang <yiliny@umich.edu>",
+  "repository": {"type": "git", "url": "git://github.com/Yilin-Yang/vim-unfocus.nvim"},
+  "dependencies": {
+    "maktaba": {"type": "git", "url": "git://github.com/google/maktaba"},
+    "glaive": {"type": "git", "url": "git://github.com/google/vim-glaive"},
+    "TypeVim": {"type": "git", "url": "git://github.com/Yilin-Yang/TypeVim"}
+  }
+}
