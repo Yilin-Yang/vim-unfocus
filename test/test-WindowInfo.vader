@@ -1,0 +1,35 @@
+Execute (Setup):
+  function! MakeWindowInfo() abort
+    let winid = win_getid()
+    let bufnr = bufnr('%')
+    return unfocus#WindowInfo#New(winid, bufnr)
+  endfunction
+
+  function! CloseWindowFor(wininfo)
+    let l:cur_win = win_getid()
+    let l:winid = a:wininfo.winid
+    call win_gotoid(l:winid)
+    close
+    call win_gotoid(l:cur_win)
+  endfunction
+
+Execute (Exists() works with the window focused):
+  let info = MakeWindowInfo()
+  Assert info.Exists(), 'should exist'
+  vsp
+  call CloseWindowFor(info)
+  Assert !info.Exists(), "shouldn't exist"
+
+Execute (Exists() works with the window unfocused):
+  let info = MakeWindowInfo()
+  new
+  Assert info.Exists(), 'should exist'
+  call CloseWindowFor(info)
+  Assert !info.Exists(), "shouldn't exist"
+
+Execute (Exists() works with the window in a different tab):
+  let info = MakeWindowInfo()
+  tabnew
+  Assert info.Exists(), 'should exist'
+  call CloseWindowFor(info)
+  Assert !info.Exists(), "shouldn't exist"

@@ -1,19 +1,27 @@
 " Minimal local .vimrc, for use when running test cases.
 "-------------------------------------------------------
-" Adapted from:
+" Taken from:
 "   https://github.com/junegunn/vader.vim
 "----------------------------------------
 if !$VISIBLE
   set lines=64
   set columns=256
 endif
+
 set nocompatible
 filetype off
-set runtimepath+=.
-set runtimepath+=..
-set runtimepath+=vader.vim
-set runtimepath+=~/.vim/bundle/vader.vim
 filetype plugin indent on
 syntax enable
 set autoread
 set hidden
+set number
+
+execute 'set runtimepath+='.getcwd()
+execute 'set runtimepath+='.getcwd().'/..'
+function! AddDependency(plugin) abort
+  execute 'set runtimepath+='.a:plugin
+  execute 'set runtimepath+=~/.vim/bundle/'.a:plugin
+endfunction
+call AddDependency('vader.vim')
+call AddDependency('vim-maktaba')
+call AddDependency('TypeVim')

@@ -1,7 +1,4 @@
 ""
-" @private
-" @dict FocusSettings
-"
 " Encapsulates setting values to apply when a window is "focused" or
 " "unfocused".  Provides member functions to update those values from a
 " window's current state. Other code modules take responsibility for prompting
