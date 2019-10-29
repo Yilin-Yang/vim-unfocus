@@ -14,7 +14,6 @@ filetype plugin indent on
 syntax enable
 set autoread
 set hidden
-set number
 
 execute 'set runtimepath+='.getcwd()
 execute 'set runtimepath+='.getcwd().'/..'

@@ -1,0 +1,62 @@
+""
+" Run tests for FocusSettings.
+"
+" vim-unfocus' autocmds for focusing/unfocusing windows should not be active,
+" or these tests will break.
+
+Execute (Setup):
+  Assert !exists('#unfocus_update'), "VIM-UNFOCUS WINDOW UPDATE AUTOCMDS ARE ENABLED; TESTS WON'T WORK!"
+  command! SetUp set number | set relativenumber
+  SetUp
+
+  let g:settings = ['&number', '&relativenumber']
+  let g:on_focus = {'&number': 1, '&relativenumber': 1}
+  let g:on_unfocus = {'&number': 0, '&relativenumber': 0}
+
+
+Execute (constructing from a window-to-unfocus works):
+  AssertEqual 1, &number, 'setup failed'
+  AssertEqual 1, &relativenumber, 'setup failed'
+
+  let wininfo = unfocus#WindowInfo#New(win_getid())
+  let fs = unfocus#FocusSettings#FromToUnfocus(wininfo, g:on_unfocus)
+  AssertEqual g:on_unfocus, wininfo.GetVals(g:settings)
+
+  call fs.Focus(wininfo, g:settings)
+  AssertEqual g:on_focus, wininfo.GetVals(g:settings)
+
+  call fs.Unfocus(wininfo, g:settings)
+  AssertEqual g:on_unfocus, wininfo.GetVals(g:settings)
+
+Then (Cleanup):
+  SetUp
+
+Execute (constructing from an already-focused window works):
+  AssertEqual 1, &number, 'setup failed'
+  AssertEqual 1, &relativenumber, 'setup failed'
+
+  let wininfo = unfocus#WindowInfo#New(win_getid())
+  let fs = unfocus#FocusSettings#AlreadyFocused(wininfo, g:on_unfocus)
+  AssertEqual g:on_focus, wininfo.GetVals(g:settings)
+
+  call fs.Unfocus(wininfo, g:settings)
+  AssertEqual g:on_unfocus, wininfo.GetVals(g:settings)
+
+  call fs.Focus(wininfo, g:settings)
+  AssertEqual g:on_focus, wininfo.GetVals(g:settings)
+
+Execute (constructing from a window-to-unfocus in another tab works):
+  let wininfo = unfocus#WindowInfo#New(win_getid())
+  SetUp
+
+  tabnew
+  AssertEqual g:on_focus, wininfo.GetVals(g:settings)
+
+  let fs = unfocus#FocusSettings#FromToUnfocus(wininfo, g:on_unfocus)
+  AssertEqual g:on_unfocus, wininfo.GetVals(g:settings)
+
+  call fs.Focus(wininfo, g:settings)
+  AssertEqual g:on_focus, wininfo.GetVals(g:settings)
+
+Then (Cleanup):
+  tabclose

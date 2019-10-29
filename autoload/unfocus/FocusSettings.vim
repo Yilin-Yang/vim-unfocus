@@ -4,19 +4,70 @@
 " window's current state. Other code modules take responsibility for prompting
 " FocusSettings objects to self-update.
 "
-" Note that bufno and winid aren't tied together by vim; one can open
-" different buffers in a window without changing the window's ID.
-" See `:help bufnr()` and `:help winid` for details.
+" FocusSettings does not (publicly) expose a "side-effect-free" constructor,
+" since (by design) one of the two "set_when_*" dicts will be overwritten with
+" whatever setting values were replaced by the most recent call to Focus() or
+" Unfocus().
+"
+" It is assumed that the {winid} passed into the FocusSettings constructor is
+" "already focused", i.e. the current setting values for the window are those
+" that the user wants to be set for a "focused" window.
 
 let s:typename = 'FocusSettings'
 
 ""
 " @private
+" Construct a FocusSettings object from a {winid}. The current values of the
+" watched settings (the keys of {set_when_unfocused}) are used to initialize
+" the "set_when_focused" member dict.
+function! unfocus#FocusSettings#AlreadyFocused(wininfo, set_when_unfocused) abort
+  return unfocus#WithLazyRedraw(
+      \ function('s:AlreadyFocused'), a:wininfo, a:set_when_unfocused)
+endfunction
+function! s:AlreadyFocused(wininfo, set_when_unfocused) abort
+  let l:new = unfocus#FocusSettings#_New({}, a:set_when_unfocused)
+  let l:to_set = keys(a:set_when_unfocused)
+  call l:new.Unfocus(a:wininfo, l:to_set)  " store current vals for Focused...
+  call l:new.Focus(a:wininfo, l:to_set)  " ...but then refocus the window
+  return l:new
+endfunction
+
+""
+" @private
+" Construct a FocusSettings object and immediately Unfocus {winid} with
+" {set_when_unfocused}, using the old setting values to populate the
+" {set_when_focused} dict.
+function! unfocus#FocusSettings#FromToUnfocus(wininfo, set_when_unfocused) abort
+  return unfocus#WithLazyRedraw(
+      \ function('s:FromToUnfocus'), a:wininfo, a:set_when_unfocused)
+endfunction
+function! s:FromToUnfocus(wininfo, set_when_unfocused)
+  let l:new = unfocus#FocusSettings#_New({}, a:set_when_unfocused)
+  let l:to_set = keys(a:set_when_unfocused)
+  call l:new.Unfocus(a:wininfo, l:to_set)  " store current vals for Focused
+  return l:new
+endfunction
+
+""
+" @private
 " Construct a new FocusSettings object.
-function! unfocus#FocusSettings#New(bufno, winid) abort
+"
+" Must specify a {set_when_focused} dict and a (set_when_unfocused) dict as
+" arguments; these are dictionaries between variable/setting names (as would
+" be passed to functions like |getwinvar()|) and their desired values when
+" the window is focused or unfocused, respectively.
+"
+" Note that {set_when_focused} or {set_when_unfocused} will be
+" clobbered as soon as Unfocus() or Focus() are called, respectively. For this
+" reason, this constructor isn't "public".
+"
+" @throws WrongType if either argument is not a dict.
+function! unfocus#FocusSettings#_New(set_when_focused, set_when_unfocused) abort
+  call maktaba#ensure#IsDict(a:set_when_focused)
+  call maktaba#ensure#IsDict(a:set_when_unfocused)
   let l:new = {
-    \ '_set_when_focused': {},
-    \ '_set_when_unfocused': {},
+    \ '__set_when_focused': copy(a:set_when_focused),
+    \ '__set_when_unfocused': copy(a:set_when_unfocused),
     \ 'Focus': typevim#make#Member('Focus'),
     \ 'Unfocus': typevim#make#Member('Unfocus'),
     \ }
