@@ -1,3 +1,5 @@
+Include: AssertThrew.vader
+
 Execute (Setup):
   function! MakeWindowInfo() abort
     let winid = win_getid()
@@ -33,3 +35,91 @@ Execute (Exists() works with the window in a different tab):
   Assert info.Exists(), 'should exist'
   call CloseWindowFor(info)
   Assert !info.Exists(), "shouldn't exist"
+
+Execute (getwinvar() works in same window, different window, different tab):
+  let info = MakeWindowInfo()
+  let w:foo = "bar"
+  AssertEqual "bar", info.getwinvar("foo")
+
+  new
+  AssertEqual "bar", info.getwinvar("foo")
+
+  tabnew
+  AssertEqual "bar", info.getwinvar("foo")
+Then (Cleanup):
+  tabclose
+  close
+
+Execute (setwinvar() works in same window, different window, different tab):
+  let info = MakeWindowInfo()
+  call info.setwinvar("foo", "baz")
+  AssertEqual "baz", info.getwinvar("foo")
+
+  new
+  call info.setwinvar("foo", "quoz")
+  AssertEqual "quoz", info.getwinvar("foo")
+
+  tabnew
+  call info.setwinvar("foo", "qing")
+  AssertEqual "qing", info.getwinvar("foo")
+Then (Cleanup):
+  tabclose
+  close
+
+Execute (GetVals() works in same window, different window, different tab):
+  let info = MakeWindowInfo()
+  let w:one = 1
+  let w:two = 2
+  let to_get = ['one', 'two']
+  let expected = {'one': 1, 'two': 2}
+  AssertEqual expected, info.GetVals(to_get)
+
+  new
+  AssertEqual expected, info.GetVals(to_get)
+
+  tabnew
+  AssertEqual expected, info.GetVals(to_get)
+Then (Cleanup):
+  tabclose
+  close
+
+Execute (SetVals() works in same window, different window, different tab):
+  let info = MakeWindowInfo()
+  let to_get = ['one', 'two']
+  let expected = {'one': 1, 'two': 2}
+  call info.SetVals(expected)
+
+  AssertEqual 1, w:one
+  AssertEqual 2, w:two
+
+  new
+  AssertEqual expected, info.GetVals(to_get)
+  let replaced = {'one': 'uno', 'two': 'dos'}
+  AssertEqual expected, info.SetVals(replaced)
+  AssertEqual replaced, info.SetVals(expected)
+
+  tabnew
+  AssertEqual expected, info.GetVals(to_get)
+  AssertEqual expected, info.SetVals(replaced)
+  AssertEqual replaced, info.SetVals(expected)
+Then (Cleanup):
+  tabclose
+  close
+
+Execute (functions throw exceptions when window no longer exists):
+  let g:info = MakeWindowInfo()
+  call info.setwinvar('foo', 'bar')
+  new
+  call CloseWindowFor(info)
+  AssertThrows call g:info.getwinvar('foo')
+  AssertThrew 'NotFound.*no longer exists'
+
+  AssertThrows call g:info.setwinvar('foo', 2)
+  AssertThrew 'NotFound.*no longer exists'
+
+
+  AssertThrows call g:info.GetVals(['foo'])
+  AssertThrew 'NotFound.*no longer exists'
+
+  AssertThrows call g:info.SetVals({'foo': 1})
+  AssertThrew 'NotFound.*no longer exists'

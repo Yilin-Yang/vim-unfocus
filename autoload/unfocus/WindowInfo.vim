@@ -111,7 +111,7 @@ endfunction
 function! unfocus#WindowInfo#SetVals(vars_and_vals) dict abort
   call s:CheckType(l:self)
   call s:AssertStillExists(l:self)
-  call maktaba#ensure#isDict(a:vars_and_vals)
+  call maktaba#ensure#IsDict(a:vars_and_vals)
   let l:old_vals = {}
   try
     for [l:var, l:val] in items(a:vars_and_vals)
