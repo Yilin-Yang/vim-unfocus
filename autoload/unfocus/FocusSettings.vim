@@ -16,7 +16,6 @@
 let s:typename = 'FocusSettings'
 
 ""
-" @private
 " Construct a FocusSettings object from a {winid}. The current values of the
 " watched settings (the keys of {set_when_unfocused}) are used to initialize
 " the "set_when_focused" member dict.
@@ -33,7 +32,6 @@ function! s:AlreadyFocused(wininfo, set_when_unfocused) abort
 endfunction
 
 ""
-" @private
 " Construct a FocusSettings object and immediately Unfocus {winid} with
 " {set_when_unfocused}, using the old setting values to populate the
 " "set_when_focused" dict.
@@ -49,7 +47,6 @@ function! s:FromToUnfocus(wininfo, set_when_unfocused)
 endfunction
 
 ""
-" @private
 " Construct a new FocusSettings object.
 "
 " Must specify a {set_when_focused} dict and a (set_when_unfocused) dict as
@@ -80,7 +77,6 @@ function! s:CheckType(Obj) abort
 endfunction
 
 ""
-" @private
 " Implementation of @function(unfocus#FocusSettings#Focus) and
 " @function(unfocus#FocusSettings#Unfocus).
 "
@@ -119,7 +115,6 @@ function! s:FocusUnfocusImpl(focus_settings, target_win, to_set, from) abort
 endfunction
 
 ""
-" @private
 " Given {wininfo_to_focus}, store the current values of the settings {to_set}
 " as "unfocused values" and restore the values of {to_set} from the "focused
 " values".
@@ -134,7 +129,6 @@ function! unfocus#FocusSettings#Focus(wininfo_to_focus, to_set) dict abort
 endfunction
 
 ""
-" @private
 " Given {wininfo_to_unfocus}, store the current values of the settings {to_set}
 " as "focused values" and restore the values of {to_set} from the "unfocused
 " values".

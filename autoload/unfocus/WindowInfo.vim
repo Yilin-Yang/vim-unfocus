@@ -9,7 +9,6 @@
 let s:typename = 'WindowInfo'
 
 ""
-" @private
 " Construct a new WindowInfo object from a {winid} (as returned by a function
 " like |win_getid()|) and an optional [bufno] (as returned by a function like
 " |bufnr()|).
@@ -50,7 +49,6 @@ function! s:AssertStillExists(self) abort
 endfunction
 
 ""
-" @private
 " Retrieve the value of a particular variable (window-local setting,
 " window-local variable, etc.) for this window. Returns [default] if no value
 " could be retrieved.
@@ -68,7 +66,6 @@ function! unfocus#WindowInfo#getwinvar(varname, ...) dict abort
 endfunction
 
 ""
-" @private
 " Set the value of a variable {varname} to {val} in this window.
 "
 " @throws NotFound if the window no longer exists.
@@ -81,7 +78,6 @@ function! unfocus#WindowInfo#setwinvar(varname, val) dict abort
 endfunction
 
 ""
-" @private
 " Given {for_vars}, return a dict between those variables and
 " their current values for the window.
 "
@@ -99,7 +95,6 @@ function! unfocus#WindowInfo#GetVals(for_vars) dict abort
 endfunction
 
 ""
-" @private
 " Set the current values of the variables {vars_and_vals} in this Window and
 " return the old values of those variables.
 "
@@ -128,7 +123,6 @@ function! unfocus#WindowInfo#SetVals(vars_and_vals) dict abort
 endfunction
 
 ""
-" @private
 " Return true if the managed window still exists and false otherwise.
 function! unfocus#WindowInfo#Exists() dict abort
   call s:CheckType(l:self)
