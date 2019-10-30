@@ -36,7 +36,7 @@ endfunction
 " @private
 " Construct a FocusSettings object and immediately Unfocus {winid} with
 " {set_when_unfocused}, using the old setting values to populate the
-" {set_when_focused} dict.
+" "set_when_focused" dict.
 function! unfocus#FocusSettings#FromToUnfocus(wininfo, set_when_unfocused) abort
   return unfocus#WithLazyRedraw(
       \ function('s:FromToUnfocus'), a:wininfo, a:set_when_unfocused)
