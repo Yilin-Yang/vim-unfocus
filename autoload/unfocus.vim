@@ -50,3 +50,17 @@ endfunction
 function! unfocus#WithLazyRedraw(ToCall, ...) abort
   return call('unfocus#With', ['&lazyredraw', 1, a:ToCall] + a:000)
 endfunction
+
+""
+" @public
+" Given a {winid}, return the value of {variable} within that window, or
+" [default] if that variable has no defined value.
+"
+" Acts as a convenience wrapper that automatically converts the given |winid|
+" into a tabnr and winnr, which it then passes (along with {variable} and
+" [default]) to |gettabwinvar()|.
+function! unfocus#WinVarFromID(winid, variable, ...) abort
+  call maktaba#ensure#IsString(a:variable)
+  let l:tab_and_winnr = win_id2tabwin(a:winid)
+  return call('gettabwinvar', l:tab_and_winnr + [a:variable] + a:000)
+endfunction

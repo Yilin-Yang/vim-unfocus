@@ -1,10 +1,10 @@
 ""
 " Helper object for uniquely identifying a window.
 "
-" Contains a `bufno` and a `winid`. Combined, these can represent the state of a
-" buffer being currently open in a particular window. In practice, only the
-" `winid` is necessary for lookup, though the `bufno` may be useful for error
-" checking.
+" Contains a `bufno`, a `winid`, and a `tabnr`. Combined, these can represent
+" the state of a buffer being currently open in a particular window. In
+" practice, only the `winid` is necessary for lookup, though the `bufno` and
+" `tabnr` may be useful for error checking.
 
 let s:typename = 'WindowInfo'
 

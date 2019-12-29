@@ -1,0 +1,40 @@
+Include: AssertThrew.vader
+
+Execute (Setup):
+  let g:plugin = maktaba#plugin#Get('vim-unfocus')
+
+Execute (changing to_set updates watched_settings):
+  AssertEqual [], g:plugin.Flag('watched_settings')
+  call g:plugin.Flag('to_set', {
+      \ 'on_focus': {
+          \ '&number': 1,
+          \ '&relativenumber': 1,
+          \ },
+      \ 'on_unfocus': {
+          \ '&number': 0,
+          \ '&foldcolumn': 0,
+          \ }
+      \ })
+
+  AssertEqual ['&foldcolumn', '&number', '&relativenumber'],
+      \ g:plugin.Flag('watched_settings')
+
+  call g:plugin.Flag('to_set', {
+      \ 'on_focus': {
+          \ },
+      \ 'on_unfocus': {
+          \ '&number': 0,
+          \ }
+      \ })
+  AssertEqual ['&number'], g:plugin.Flag('watched_settings')
+
+  call g:plugin.Flag('to_set', {
+      \ 'on_focus': {
+          \ '&signcolumn': 'no'
+          \ },
+      \ })
+  AssertEqual ['&signcolumn'], g:plugin.Flag('watched_settings')
+
+Execute (changing a to_set locus updates watched_settings):
+  call g:plugin.Flag('to_set[on_unfocus]', {'&number': 1})
+  AssertEqual ['&number', '&signcolumn'], g:plugin.Flag('watched_settings')
