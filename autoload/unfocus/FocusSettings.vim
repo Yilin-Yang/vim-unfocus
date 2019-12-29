@@ -95,11 +95,11 @@ function! s:FocusUnfocusImpl(focus_settings, target_win, to_set, from) abort
   " it separately
   let l:vars_to_get = []
 
-  let l:not_present = []  " used to detect missing items in the dict
+  let l:NOT_PRESENT = []  " used to detect missing items in the dict
   for l:var in a:to_set
     call maktaba#ensure#IsString(l:var)
-    let l:val = get(a:from, l:var, l:not_present)
-    if l:val is l:not_present
+    let l:val = get(a:from, l:var, l:NOT_PRESENT)
+    if l:val is l:NOT_PRESENT
       call add(l:vars_to_get, l:var)
     else
       let l:vars_and_vals_to_set[l:var] = l:val
@@ -107,7 +107,7 @@ function! s:FocusUnfocusImpl(focus_settings, target_win, to_set, from) abort
   endfor
 
   let l:old_vals = a:target_win.SetVals(l:vars_and_vals_to_set)
-  if len(l:not_present)
+  if len(l:vars_to_get)
     call extend(l:old_vals, a:target_win.GetVals(l:vars_to_get), 'error')
   endif
 

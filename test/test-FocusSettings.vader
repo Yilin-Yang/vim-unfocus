@@ -60,3 +60,28 @@ Execute (constructing from a window-to-unfocus in another tab works):
 
 Then (Cleanup):
   tabclose
+
+Execute ("asymmetric" on_focus and on_unfocus settings work correctly):
+  set number
+  set relativenumber
+
+  let wininfo = unfocus#WindowInfo#New(win_getid())
+  let fs = unfocus#FocusSettings#AlreadyFocused(wininfo, {'&relativenumber': 0})
+
+  AssertEqual 1, &number
+  AssertEqual 1, &relativenumber
+
+  call fs.Unfocus(wininfo, g:settings)  " stash 1, 1
+  AssertEqual {'&number': 1, '&relativenumber': 0}, wininfo.GetVals(g:settings)
+
+  set nonumber
+  AssertEqual {'&number': 0, '&relativenumber': 0}, wininfo.GetVals(g:settings)
+
+  call fs.Focus(wininfo, g:settings)  " stash 0, 0
+  AssertEqual {'&number': 1, '&relativenumber': 1}, wininfo.GetVals(g:settings)
+
+  call fs.Unfocus(wininfo, g:settings)
+  AssertEqual {'&number': 0, '&relativenumber': 0}, wininfo.GetVals(g:settings)
+
+  call fs.Focus(wininfo, g:settings)
+  AssertEqual {'&number': 1, '&relativenumber': 1}, wininfo.GetVals(g:settings)
