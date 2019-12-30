@@ -184,3 +184,7 @@ call s:plugin.Flag('ignore_if', [
             \ ['unload', 'delete', 'wipe'])
       \ },
     \ ])
+" ensure that ignore_if contains only funcrefs
+call s:plugin.flags.ignore_if.AddTranslator(
+    \ {funclist ->
+        \ map(funclist, {_, Func -> maktaba#ensure#IsFuncref(Func)})})

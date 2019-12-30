@@ -1,0 +1,126 @@
+Include: AssertThrew.vader
+
+Execute (Setup):
+  let g:plugin = maktaba#plugin#Get('vim-unfocus')
+
+  tabnew
+  let g:winid = win_getid()
+  let [g:tabnr, g:winnr] = win_id2tabwin(g:winid)
+  tabprev
+
+  ""
+  " Given {settings_and_vals}, a dict between setting strings and the values
+  " that they should have, configure g:winid with those settings.
+  function! SetWinVars(settings_and_vals) abort
+    call maktaba#ensure#IsDict(a:settings_and_vals)
+    for [l:setting, l:val] in items(a:settings_and_vals)
+      call settabwinvar(g:tabnr, g:winnr, l:setting, l:val)
+    endfor
+  endfunction
+
+  ""
+  " Return the value of {setting} in the test window.
+  function! GetWinVar(setting) abort
+    return gettabwinvar(g:tabnr, g:winnr, a:setting)
+  endfunction
+
+  ""
+  " Return a dict between the values given in {settings} and their values in
+  " the test window.
+  function! GetWinVars(settings) abort
+    call maktaba#ensure#IsList(a:settings)
+    let l:settings_and_vals = {}
+    for l:setting in a:settings
+      let l:settings_and_vals[l:setting] = GetWinVar(l:setting)
+    endfor
+    return l:settings_and_vals
+  endfunction
+
+Execute (vim-unfocus rejects non-function elements in ignore_if):
+  let g:current = copy(g:plugin.Flag('ignore_if'))
+  AssertThrows call g:plugin.Flag('ignore_if', g:current + [0])
+  AssertThrew 'ERROR(WrongType)'
+  AssertEqual g:current, g:plugin.Flag('ignore_if')
+
+Execute (ShouldIgnore default ignores "temporary" buffers (setup)):
+  " configure the test window as a "normal" buffer, except for whatever
+  " buffer traits are provided as arguments to this function
+  function! SetBufferTraits(settings_and_vals) abort
+    let l:settings_and_vals = copy(a:settings_and_vals)
+    " defaults for a non-special buffer
+    let l:buftraits = {
+        \ '&buftype': '',
+        \ '&buflisted': 1,
+        \ '&bufhidden': '',
+        \ }
+    call extend(l:buftraits, a:settings_and_vals, 'force')
+    call SetWinVars(l:buftraits)
+  endfunction
+
+  call SetBufferTraits({'&buftype': 'nofile', '&bufhidden': 'wipe'})
+  AssertEqual {'&buftype': 'nofile', '&buflisted': 1, '&bufhidden': 'wipe'},
+            \ GetWinVars(['&buftype', '&buflisted', '&bufhidden'])
+
+  " buftype should reset with this new call
+  call SetBufferTraits({'&buflisted': 0})
+  AssertEqual {'&buftype': '', '&buflisted': 0, '&bufhidden': ''},
+            \ GetWinVars(['&buftype', '&buflisted', '&bufhidden'])
+
+  function! TestIgnore(settings_and_vals, should_ignore, ignore_str) abort
+    call SetBufferTraits(a:settings_and_vals)
+    let l:ignore_str = 'FAILED ON: '.a:ignore_str
+    if a:should_ignore
+      Assert unfocus#ShouldIgnore(g:winid), l:ignore_str
+    else
+      Assert !unfocus#ShouldIgnore(g:winid), l:ignore_str
+    endif
+  endfunction
+
+  function! TestDefaultIgnore() abort
+    call TestIgnore({}, 0, "ShouldIgnore doesn't ignore regular buffer")
+    call TestIgnore({'&buftype': 'quickfix'}, 1, 'ShouldIgnore default ignores quickfix')
+    call TestIgnore({'&buftype': 'help'}, 1, 'ShouldIgnore default ignores help')
+    call TestIgnore({'&bufhidden': 'unload'}, 1, 'ShouldIgnore default ignores unload')
+    call TestIgnore({'&bufhidden': 'delete'}, 1, 'ShouldIgnore default ignores delete')
+    call TestIgnore({'&bufhidden': 'wipe'}, 1, 'ShouldIgnore default ignores wipe')
+    call TestIgnore({'&buftype': 'nofile', '&bufhidden': 'wipe'}, 1, 'ShouldIgnore default ignores nofile and wipe')
+  endfunction
+
+Execute (ShouldIgnore default ignore works correctly):
+  call TestDefaultIgnore()
+
+Execute (ShouldIgnore considers user-provided functors):
+  function! UserFunctor1(winid) abort
+    return unfocus#WinVarFromID(a:winid, 'foobar') ==# 1
+  endfunction
+  function! UserFunctor2(winid) abort
+    return unfocus#WinVarFromID(a:winid, 'foobar') ==# 2
+  endfunction
+
+  call g:plugin.Flag(
+      \ 'ignore_if',
+      \ g:plugin.Flag('ignore_if') +
+        \ [function('UserFunctor1'), function('UserFunctor2')])
+  call TestIgnore({'foobar': 1}, 1, 'ShouldIgnore ignores on UserFunctor1')
+  call TestIgnore({'foobar': 2}, 1, 'ShouldIgnore ignores on UserFunctor2')
+  call TestIgnore({'foobar': 0}, 0, "ShouldIgnore doesn't ignore on neither UserFunctor")
+  call TestIgnore({'foobar': 1, '&buftype': 'quickfix'}, 1, "ShouldIgnore ignores on UserFunctor1 and default")
+
+Execute (ShouldIgnore ignores nothing with empty ignore list):
+  call g:plugin.Flag('ignore_if', [])
+  call TestIgnore({'&buftype': 'quickfix'}, 0, 'ShouldIgnore nothing ignores quickfix')
+  call TestIgnore({'&buftype': 'help'}, 0, 'ShouldIgnore nothing ignores help')
+  call TestIgnore({'&bufhidden': 'unload'}, 0, 'ShouldIgnore nothing ignores unload')
+  call TestIgnore({'&bufhidden': 'delete'}, 0, 'ShouldIgnore nothing ignores delete')
+  call TestIgnore({'&bufhidden': 'wipe'}, 0, 'ShouldIgnore nothing ignores wipe')
+  call TestIgnore({'&buftype': 'nofile', '&bufhidden': 'wipe'}, 0, 'ShouldIgnore nothing ignores nofile and wipe')
+
+Execute (ShouldIgnore reports errors from user-provided functors):
+  function! TooFewArgs() abort
+    throw 'E118'
+  endfunction
+  call g:plugin.Flag('ignore_if', [function('TooFewArgs')])
+
+  AssertThrows call unfocus#ShouldIgnore(g:winid)
+  " too many arguments to function TooFewArgs
+  AssertThrew 'E118'

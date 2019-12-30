@@ -1,6 +1,6 @@
+let [s:plugin, s:enter] = maktaba#plugin#Enter(expand('<sfile>:p'))
 
 ""
-" @private
 " Return true if the |window| given {winid} (as returned by |win_getid()| is
 " focused, false otherwise.
 "
@@ -11,7 +11,6 @@ function! unfocus#IsFocused(winid) abort
 endfunction
 
 ""
-" @private
 " Set {setting} (explicitly qualified with g:, b:, w:, &, etc.) to {value},
 " returning its old value.
 "
@@ -28,7 +27,6 @@ function! unfocus#Exchange(setting, value) abort
 endfunction
 
 ""
-" @private
 " Invoke the function {ToCall} with [arguments] with {setting} set to {value},
 " and restore {setting} to its old value after {ToCall} returns regardless
 " of whether it exited with error.
@@ -45,7 +43,6 @@ function! unfocus#With(setting, value, ToCall, ...) abort
 endfunction
 
 ""
-" @private
 " Calls {ToCall} @function(unfocus#With) lazyredraw set to true.
 function! unfocus#WithLazyRedraw(ToCall, ...) abort
   return call('unfocus#With', ['&lazyredraw', 1, a:ToCall] + a:000)
@@ -64,3 +61,25 @@ function! unfocus#WinVarFromID(winid, variable, ...) abort
   let l:tab_and_winnr = win_id2tabwin(a:winid)
   return call('gettabwinvar', l:tab_and_winnr + [a:variable] + a:000)
 endfunction
+
+
+""
+" Given a {winid} that the user has just entered, return 1 if vim-unfocus
+" should ignore it (i.e. one or more of the given callables returns truthy)
+" and 0 otherwise.
+"
+function! unfocus#ShouldIgnore(winid) abort
+  for l:ShouldIgnore in s:IGNORE_IF.Get()
+    try
+      if l:ShouldIgnore(a:winid)
+        return 1
+      endif
+    catch
+      throw maktaba#error#Failure(
+          \ 'ignore_if callable %s threw exception on winid %s: %s, %s',
+          \ string(l:ShouldIgnore), a:winid, v:throwpoint, v:exception)
+    endtry
+  endfor
+  return 0
+endfunction
+let s:IGNORE_IF = s:plugin.flags.ignore_if
