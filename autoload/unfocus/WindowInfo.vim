@@ -13,7 +13,7 @@ let s:autoload_prefix = 'unfocus#WindowInfo#'
 " stored.
 "
 " @throws NotFound if {winid} doesn't correspond to an existing window.
-" @throws WrongType if {winid} is not a number, or if [bufnr] is not a number or v:null.
+" @throws WrongType if {winid} is not a number.
 function! unfocus#WindowInfo#New(winid) abort
   let l:new = deepcopy(s:PROTOTYPE)
   " note that winbufnr() takes a numeric argument, and accepts a window-ID

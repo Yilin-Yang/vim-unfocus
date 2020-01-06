@@ -69,7 +69,7 @@ call to `:set {option}`), that value will be stashed into the focused settings
 dict when the window is unfocused. This prevents vim-unfocus from clobbering
 window variables that the user changes on purpose.
 
-Default: {} `
+Default: {'on_focus': {}, 'on_unfocus': {}} `
 
                                               *vim-unfocus:store_settings_per*
 The most granular kind of object for which to stash focused and unfocused
@@ -106,7 +106,7 @@ inherit_from_current: The current values of the watched window settings in the
   current window are carried over and used as the "focused" setting values in
   the new window. This mimics vim's default behavior.
 
-use_watched_defaults: The "focused" setting values from |vim-unfocus:to_set|
+use_focused_settings: The "focused" setting values from |vim-unfocus:to_set|
   are applied on entering the new window.
 
 Default: 'inherit_from_current' `
@@ -132,6 +132,22 @@ be helpful for querying information about a particular window.
 Appending callables to this flag may be finicky, since (outside of calls to
 |Flag.Set()|) maktaba flags are meant to be immutable. See |Flag.Get()| and
 |Flag.GetCopy()|; the latter function should be helpful for this purpose.
+
+                                                *vim-unfocus:plugin[autocmds]*
+When set to zero, disables vim-unfocus's autocommands; this essentially
+"deactivates" the plugin. Set to 1 to reenable.
+
+This value can be modified at runtime (i.e. outside of the .vimrc) and will
+still behave as expected.
+
+Default: 1 `
+
+                                                   *vim-unfocus:plugin[state]*
+When set to zero, disables most (if not all) of vim-unfocus's persistent,
+stateful variables. It should be fine to leave this enabled while disabling
+`plugin[autocmds]`, but disabling this flag is safest when trying to
+completely disable vim-unfocus at runtime.
+Default: 1 `
 
 ==============================================================================
 FUNCTIONS                                              *vim-unfocus-functions*

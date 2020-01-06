@@ -51,9 +51,10 @@ function! s:FromToUnfocus(wininfo, set_when_unfocused)
 endfunction
 
 ""
-" Construct a FocusSettings object for a presently unfocused window, using the
+" Construct a FocusSettings object for a presently unfocused window {winid},
+" leaving it unfocused, storing the {set_when_focused} values and using the
 " current values of the given settings are used to populate the
-" "set_when_unfocused" member dict.
+" "set_when_unfocused" member dict
 "
 " It is assumed that the {winid} passed into the FocusSettings constructor is
 " "not focused", i.e. the current setting values for the window are those

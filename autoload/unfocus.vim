@@ -87,17 +87,21 @@ let s:f_IGNORE_IF = s:plugin.flags.ignore_if
 
 ""
 " Check if switching/"switching" (e.g. opening a new buffer in an existing
-" window, switching windows, etc.) to {winid} counts as a changed focus. If
-" yes, unfocus the @dict(FocusSettings) for the last window, focus the new
-" @dict(FocusSettings) for the new window, mark it as the last focused window,
-" and return 1. Else, return 0.
-function! unfocus#SwitchFocusIfDifferent(winid) abort
-  let l:last_focus_settings = g:unfocus_last_focused.focus_settings
-  let l:last_window = g:unfocus_last_focused.window_info
+" window, switching windows, etc.) to {winid} with associated
+" @dict(FocusSettings) {focus_settings} counts as a changed focus.
+"
+" If yes, unfocus the @dict(FocusSettings) for the last window, focus the new
+" {focus_settings} for the new window {winid}, mark it as the last focused
+" window, and return 1. Else, return 0.
+function! unfocus#SwitchFocusIfDifferent(winid, focus_settings) abort
+  let s:unfocus_last_focused =
+      \ get(s:, 'unfocus_last_focused',
+          \ {'focus_settings': v:null, 'window_info': v:null})
 
-  let [l:new_focus_settings, l:existed] =
-      \ g:unfocus_focus_settings_map.SettingsForWinID(a:winid, 'to_unfocus')
-  if l:new_focus_settings is l:last_focus_settings
+  let l:last_focus_settings = s:unfocus_last_focused.focus_settings
+  let l:last_window = s:unfocus_last_focused.window_info
+
+  if a:focus_settings is l:last_focus_settings
     return 0
   endif
 
@@ -106,20 +110,28 @@ function! unfocus#SwitchFocusIfDifferent(winid) abort
   endif
 
   let l:new_window = unfocus#WindowInfo#New(a:winid)
-  let g:unfocus_last_focused =
-      \ {'focus_settings': l:new_focus_settings, 'window_info': l:new_window}
+  let s:unfocus_last_focused.focus_settings = a:focus_settings
+  let s:unfocus_last_focused.window_info = l:new_window
 
-  call l:new_focus_settings.Focus(l:new_window, s:f_WATCHED_SETTINGS.Get())
+  call a:focus_settings.Focus(l:new_window, s:f_WATCHED_SETTINGS.Get())
 
   return 1
 endfunction
 let s:f_WATCHED_SETTINGS = s:plugin.flags.watched_settings
 
 ""
+" Return the current @dict(FocusSettings) used to track for the current
+" {winid}.
+function! unfocus#CurrentFocusSettings(winid) abort
+  return typevim#ensure#IsType(UnfocusGetFocusSettingsMap(), 'FocusSettingsMap')
+      \.SettingsForWinID(a:winid)
+endfunction
+
+""
 " Begin tracking settings for all unseen windows, window-buffer pairs, or
 " buffers, depending on the user's settings.
 function! unfocus#AddUnseen() abort
-  call g:unfocus_focus_settings_map.AddUnseen()
+  call UnfocusGetFocusSettingsMap().AddUnseen()
 endfunction
 
 function! unfocus#InitializeFocused(wininfo) abort

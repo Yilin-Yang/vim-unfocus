@@ -17,7 +17,8 @@ function! s:EnableDisableAutocmds(plugin_flag) abort
     augroup unfocus_update
       au!
       autocmd VimEnter,BufEnter,BufWinEnter,WinEnter *
-          \ call unfocus#SwitchFocusIfDifferent(win_getid())
+          \ call unfocus#SwitchFocusIfDifferent(
+              \ win_getid(), unfocus#CurrentFocusSettings(win_getid()))
     augroup end
   else  " disable autocmds
     augroup unfocus_update

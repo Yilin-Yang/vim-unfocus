@@ -10,21 +10,28 @@ let s:map_per_window = v:null
 let s:map_per_window_and_buffer = v:null
 let s:map_per_buffer = v:null
 
-let g:unfocus_focus_settings_map = v:null
+
+""
+" @private
+" Retrieve the datastructure that vim-unfocus uses to map between |winid|s and
+" @dict(FocusSettings) objects.
+function! UnfocusGetFocusSettingsMap() abort
+  return s:unfocus_focus_settings_map
+endfunction
+let s:unfocus_focus_settings_map = v:null
 
 
-let s:INITIALIZE_FOCUSED = function('unfocus#InitializeFocused')
 
 ""
 " Register a callback that fires on changes to @flag(store_settings_per),
-" changing the global v_focus_settings_map.
+" changing the focus_settings_map singleton.
 function! s:ChangeFocusSettingsMap(store_settings_per) abort
   if a:store_settings_per ==# 'window'
     if s:map_per_window is v:null
       let s:map_per_window =
           \ unfocus#FocusSettingsMap#New(s:f_TO_SET, s:INITIALIZE_FOCUSED)
     endif
-    let g:unfocus_focus_settings_map = s:map_per_window
+    let s:unfocus_focus_settings_map = s:map_per_window
   " elseif a:store_settings_per ==# 'window_and_buffer'
   " elseif a:store_settings_per ==# 'buffer'
   else
@@ -33,11 +40,7 @@ function! s:ChangeFocusSettingsMap(store_settings_per) abort
   endif
 endfunction
 let s:f_TO_SET = s:plugin.flags.to_set
+let s:INITIALIZE_FOCUSED = function('unfocus#InitializeFocused')
+
 call s:plugin.flags.store_settings_per.AddCallback(
     \ function('s:ChangeFocusSettingsMap'))
-
-
-""
-" The @dict(FocusSettings) and @dict(WindowInfo) for the most recently focused
-" window in a dictionary.
-let g:unfocus_last_focused = {'focus_settings': v:null, 'window_info': v:null}

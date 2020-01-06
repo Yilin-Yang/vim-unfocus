@@ -98,9 +98,7 @@ let s:WINDOW_STATE_PROTOTYPE = typevim#make#Class(
 ""
 " Produce a @dict(FocusSettings) object for {winid}.
 "
-" Return a tuple: the retrieved FocusSettings object, along with
-" a true if the object was newly created during this callor false if it
-" already existed.
+" Return the retrieved FocusSettings object.
 "
 " May also take a [construct_as] parameter, which may be "to_unfocus" or
 " "default_unfocused": this controls behavior when the FocusSettings object
@@ -114,14 +112,13 @@ let s:WINDOW_STATE_PROTOTYPE = typevim#make#Class(
 "
 " @default construct_as=`"to_unfocus"`
 "
-" @throws BadValue if {construct_as} is invalid.
-" @throws WrongType if {winid} is not a number or {construct_as} is not a string.
+" @throws BadValue if [construct_as] is invalid.
+" @throws WrongType if {winid} is not a number or [construct_as] is not a string.
 function! unfocus#FocusSettingsMap#SettingsForWinID(winid, ...) dict abort
   call s:CheckType(l:self)
   let l:construct_as = get(a:000, 0, 'to_unfocus')
 
   let l:winstate = get(l:self.__winid_to_winstate, a:winid, v:null)
-  let l:existed = 1
   if l:winstate is v:null
     " construct the new FocusSettings object
     let l:existed = 0
@@ -142,7 +139,7 @@ function! unfocus#FocusSettingsMap#SettingsForWinID(winid, ...) dict abort
     endif
     let l:self.__winid_to_winstate[a:winid] = l:winstate
   endif
-  return [l:winstate.settings, l:existed]
+  return l:winstate.settings
 endfunction
 
 ""
