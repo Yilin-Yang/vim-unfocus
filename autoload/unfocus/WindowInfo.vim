@@ -1,41 +1,45 @@
 ""
-" Helper object for uniquely identifying a window.
+" Helper object for uniquely identifying a window and setting window values.
 "
-" Contains a `bufno`, a `winid`, and a `tabnr`. Combined, these can represent
-" the state of a buffer being currently open in a particular window. In
-" practice, only the `winid` is necessary for lookup, though the `bufno` and
-" `tabnr` may be useful for error checking.
+" Contains a `bufnr`, a `winid`, and a `tabnr`. Combined, these can represent
+" the state of a buffer being currently open in a particular window.
 
 let s:typename = 'WindowInfo'
+let s:autoload_prefix = 'unfocus#WindowInfo#'
 
 ""
-" Construct a new WindowInfo object from a {winid} (as returned by a function
-" like |win_getid()|) and an optional [bufno] (as returned by a function like
-" |bufnr()|).
+" Construct a new WindowInfo object from a {winid} as returned by a function
+" like |win_getid()|. From this, a |bufnr| and tabnr are calculated and
+" stored.
 "
 " @throws NotFound if {winid} doesn't correspond to an existing window.
-" @throws WrongType if {winid} is not a number, or if [bufno] is not a number or v:null.
-function! unfocus#WindowInfo#New(winid, ...) abort
-  let l:bufno = get(a:000, 0, v:null)
-  let l:new = {
-      \ 'bufno': maktaba#ensure#TypeMatchesOneOf(l:bufno, [0, v:null]),
-      \ 'winid': maktaba#ensure#IsNumber(a:winid),
-      \ 'tabnr': v:null,
-      \ 'getwinvar': typevim#make#Member('getwinvar'),
-      \ 'setwinvar': typevim#make#Member('setwinvar'),
-      \ 'GetVals': typevim#make#Member('GetVals'),
-      \ 'SetVals': typevim#make#Member('SetVals'),
-      \ 'Exists': typevim#make#Member('Exists'),
-      \ }
-
+" @throws WrongType if {winid} is not a number, or if [bufnr] is not a number or v:null.
+function! unfocus#WindowInfo#New(winid) abort
+  let l:new = deepcopy(s:PROTOTYPE)
+  " note that winbufnr() takes a numeric argument, and accepts a window-ID
+  " therefore, a winid must be a number
+  let l:new.bufnr = winbufnr(maktaba#ensure#IsNumber(a:winid))
+  if l:new.bufnr ==# -1
+    throw maktaba#error#NotFound('bufnr lookup failed for winid: %d', a:winid)
+  endif
   let l:new.tabnr = win_id2tabwin(a:winid)[0]
   if l:new.tabnr ==# 0
-    throw maktaba#error#NotFound(
-        \ printf('Could not find tabpage for window %d', a:winid))
+    throw maktaba#error#NotFound('tabpage lookup failed for winid %d', a:winid)
   endif
-
-  return typevim#make#Class(s:typename, l:new)
+  let l:new.winid = a:winid
+  return l:new
 endfunction
+let s:PROTOTYPE = typevim#make#Class(
+    \ s:typename,
+    \ { 'bufnr': v:null,
+      \ 'winid': v:null,
+      \ 'tabnr': v:null,
+      \ 'getwinvar': function(s:autoload_prefix.'getwinvar'),
+      \ 'setwinvar': function(s:autoload_prefix.'setwinvar'),
+      \ 'GetVals': function(s:autoload_prefix.'GetVals'),
+      \ 'SetVals': function(s:autoload_prefix.'SetVals'),
+      \ 'Exists': function(s:autoload_prefix.'Exists'),
+    \ })
 
 function! s:CheckType(Obj) abort
   call typevim#ensure#IsType(a:Obj, s:typename)

@@ -8,22 +8,22 @@
 " since (by design) one of the two "set_when_*" dicts will be overwritten with
 " whatever setting values were replaced by the most recent call to Focus() or
 " Unfocus().
-"
-" It is assumed that the {winid} passed into the FocusSettings constructor is
-" "already focused", i.e. the current setting values for the window are those
-" that the user wants to be set for a "focused" window.
 
 let s:typename = 'FocusSettings'
 
 ""
 " Construct a FocusSettings object from a {winid}. The current values of the
-" watched settings (the keys of {set_when_unfocused}) are used to initialize
+" given settings (the keys of {set_when_unfocused}) are used to initialize
 " the "set_when_focused" member dict.
-function! unfocus#FocusSettings#AlreadyFocused(wininfo, set_when_unfocused) abort
+"
+" It is assumed that the {winid} passed into the FocusSettings constructor is
+" "already focused", i.e. the current setting values for the window are those
+" that the user wants to be set for a "focused" window.
+function! unfocus#FocusSettings#FromFocused(wininfo, set_when_unfocused) abort
   return unfocus#WithLazyRedraw(
-      \ function('s:AlreadyFocused'), a:wininfo, a:set_when_unfocused)
+      \ function('s:FromFocused'), a:wininfo, a:set_when_unfocused)
 endfunction
-function! s:AlreadyFocused(wininfo, set_when_unfocused) abort
+function! s:FromFocused(wininfo, set_when_unfocused) abort
   let l:new = unfocus#FocusSettings#_New({}, a:set_when_unfocused)
   let l:to_set = keys(a:set_when_unfocused)
   call l:new.Unfocus(a:wininfo, l:to_set)  " store current vals for Focused...
@@ -35,6 +35,10 @@ endfunction
 " Construct a FocusSettings object and immediately Unfocus {winid} with
 " {set_when_unfocused}, using the old setting values to populate the
 " "set_when_focused" dict.
+"
+" It is assumed that the {winid} passed into the FocusSettings constructor is
+" "already focused", i.e. the current setting values for the window are those
+" that the user wants to be set for a "focused" window.
 function! unfocus#FocusSettings#FromToUnfocus(wininfo, set_when_unfocused) abort
   return unfocus#WithLazyRedraw(
       \ function('s:FromToUnfocus'), a:wininfo, a:set_when_unfocused)
@@ -43,6 +47,26 @@ function! s:FromToUnfocus(wininfo, set_when_unfocused)
   let l:new = unfocus#FocusSettings#_New({}, a:set_when_unfocused)
   let l:to_set = keys(a:set_when_unfocused)
   call l:new.Unfocus(a:wininfo, l:to_set)  " store current vals for Focused
+  return l:new
+endfunction
+
+""
+" Construct a FocusSettings object for a presently unfocused window, using the
+" current values of the given settings are used to populate the
+" "set_when_unfocused" member dict.
+"
+" It is assumed that the {winid} passed into the FocusSettings constructor is
+" "not focused", i.e. the current setting values for the window are those
+" that the user wants to be set for an "unfocused" window..
+function! unfocus#FocusSettings#FromUnfocused(wininfo, set_when_focused) abort
+  return unfocus#WithLazyRedraw(
+      \ function('s:FromUnfocused'), a:wininfo, a:set_when_focused)
+endfunction
+function! s:FromUnfocused(wininfo, set_when_focused)
+  let l:new = unfocus#FocusSettings#_New(a:set_when_focused, {})
+  let l:to_set = keys(a:set_when_focused)
+  call l:new.Focus(a:wininfo, l:to_set)  " store current as unfocused vals
+  call l:new.Unfocus(a:wininfo, l:to_set)  " ...then restore to those settings
   return l:new
 endfunction
 

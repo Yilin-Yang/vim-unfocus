@@ -3,8 +3,7 @@ Include: AssertThrew.vader
 Execute (Setup):
   function! MakeWindowInfo() abort
     let winid = win_getid()
-    let bufnr = bufnr('%')
-    return unfocus#WindowInfo#New(winid, bufnr)
+    return unfocus#WindowInfo#New(winid)
   endfunction
 
   function! CloseWindowFor(wininfo)

@@ -5,6 +5,9 @@
 " or these tests will break.
 
 Execute (Setup):
+  let g:plugin = maktaba#plugin#Get('vim-unfocus')
+  call g:plugin.Flag('plugin[autocmds]', 0)
+
   Assert !exists('#unfocus_update'), "VIM-UNFOCUS WINDOW UPDATE AUTOCMDS ARE ENABLED; TESTS WON'T WORK!"
   command! SetUp set number | set relativenumber
   SetUp
@@ -31,12 +34,31 @@ Execute (constructing from a window-to-unfocus works):
 Then (Cleanup):
   SetUp
 
+Execute (constructing from an already-unfocused window works):
+  set number
+  set norelativenumber
+  AssertEqual 1, &number, 'setup failed'
+  AssertEqual 0, &relativenumber, 'setup failed'
+
+  let wininfo = unfocus#WindowInfo#New(win_getid())
+  let fs = unfocus#FocusSettings#FromUnfocused(wininfo, g:on_focus)
+  AssertEqual {'&number': 1, '&relativenumber': 0}, wininfo.GetVals(g:settings)
+
+  call fs.Focus(wininfo, g:settings)
+  AssertEqual g:on_focus, wininfo.GetVals(g:settings)
+
+  call fs.Unfocus(wininfo, g:settings)
+  AssertEqual {'&number': 1, '&relativenumber': 0}, wininfo.GetVals(g:settings)
+
+Then (Cleanup):
+  SetUp
+
 Execute (constructing from an already-focused window works):
   AssertEqual 1, &number, 'setup failed'
   AssertEqual 1, &relativenumber, 'setup failed'
 
   let wininfo = unfocus#WindowInfo#New(win_getid())
-  let fs = unfocus#FocusSettings#AlreadyFocused(wininfo, g:on_unfocus)
+  let fs = unfocus#FocusSettings#FromFocused(wininfo, g:on_unfocus)
   AssertEqual g:on_focus, wininfo.GetVals(g:settings)
 
   call fs.Unfocus(wininfo, g:settings)
@@ -66,7 +88,7 @@ Execute ("asymmetric" on_focus and on_unfocus settings work correctly):
   set relativenumber
 
   let wininfo = unfocus#WindowInfo#New(win_getid())
-  let fs = unfocus#FocusSettings#AlreadyFocused(wininfo, {'&relativenumber': 0})
+  let fs = unfocus#FocusSettings#FromFocused(wininfo, {'&relativenumber': 0})
 
   AssertEqual 1, &number
   AssertEqual 1, &relativenumber

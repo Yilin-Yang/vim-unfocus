@@ -11,19 +11,19 @@ function! unfocus#IsFocused(winid) abort
 endfunction
 
 ""
-" Set {setting} (explicitly qualified with g:, b:, w:, &, etc.) to {value},
+" Set {setting} (explicitly qualified with g:, b:, w:, &, etc.) to {Value},
 " returning its old value.
 "
-" If {value} is a list or dictionary, then it will be stored by value, i.e.
-" {setting} will not refer to the original {value} passed into this function.
+" If {Value} is a list or dictionary, then it will be stored by value, i.e.
+" {setting} will not refer to the original {Value} passed into this function.
 "
 " @throws WrongType if {setting} is not a string.
-function! unfocus#Exchange(setting, value) abort
+function! unfocus#Exchange(setting, Value) abort
   call maktaba#ensure#IsString(a:setting)
-  let l:old_val = v:null
-  execute 'let l:old_val = '.a:setting
-  execute 'let '.a:setting.' = '.string(a:value)
-  return l:old_val
+  let l:OldVal = v:null
+  execute 'let l:OldVal = '.a:setting
+  execute 'let '.a:setting.' = '.string(a:Value)
+  return l:OldVal
 endfunction
 
 ""
@@ -69,7 +69,7 @@ endfunction
 " and 0 otherwise.
 "
 function! unfocus#ShouldIgnore(winid) abort
-  for l:ShouldIgnore in s:IGNORE_IF.Get()
+  for l:ShouldIgnore in s:f_IGNORE_IF.Get()
     try
       if l:ShouldIgnore(a:winid)
         return 1
@@ -82,4 +82,60 @@ function! unfocus#ShouldIgnore(winid) abort
   endfor
   return 0
 endfunction
-let s:IGNORE_IF = s:plugin.flags.ignore_if
+let s:f_IGNORE_IF = s:plugin.flags.ignore_if
+
+
+""
+" Check if switching/"switching" (e.g. opening a new buffer in an existing
+" window, switching windows, etc.) to {winid} counts as a changed focus. If
+" yes, unfocus the @dict(FocusSettings) for the last window, focus the new
+" @dict(FocusSettings) for the new window, mark it as the last focused window,
+" and return 1. Else, return 0.
+function! unfocus#SwitchFocusIfDifferent(winid) abort
+  let l:last_focus_settings = g:unfocus_last_focused.focus_settings
+  let l:last_window = g:unfocus_last_focused.window_info
+
+  let [l:new_focus_settings, l:existed] =
+      \ g:unfocus_focus_settings_map.SettingsForWinID(a:winid, 'to_unfocus')
+  if l:new_focus_settings is l:last_focus_settings
+    return 0
+  endif
+
+  if !empty(l:last_window) && l:last_window.Exists()
+    call l:last_focus_settings.Unfocus(l:last_window, s:f_WATCHED_SETTINGS.Get())
+  endif
+
+  let l:new_window = unfocus#WindowInfo#New(a:winid)
+  let g:unfocus_last_focused =
+      \ {'focus_settings': l:new_focus_settings, 'window_info': l:new_window}
+
+  if l:existed
+    call l:new_focus_settings.Focus(l:new_window, s:f_WATCHED_SETTINGS.Get())
+  endif
+
+  return 1
+endfunction
+let s:f_WATCHED_SETTINGS = s:plugin.flags.watched_settings
+
+""
+" Begin tracking settings for all unseen windows, window-buffer pairs, or
+" buffers, depending on the user's settings.
+function! unfocus#AddUnseen() abort
+  call g:unfocus_focus_settings_map.AddUnseen()
+endfunction
+
+function! unfocus#InitializeFocused(wininfo) abort
+  call typevim#ensure#IsType(a:wininfo, 'WindowInfo')
+  let l:on_new_window = s:f_ON_NEW_WINDOW.Get()
+  if l:on_new_window ==# 'inherit_from_current'
+    " do nothing
+  elseif l:on_new_window ==# 'use_focused_settings'
+    let l:on_focus = s:f_TO_SET.Get(['on_focus'])
+    call a:wininfo.SetVals(l:on_focus)
+  else
+    throw maktaba#error#Failure(
+        \ 'unknown value for on_new_window: %s', string(l:on_new_window))
+  endif
+endfunction
+let s:f_ON_NEW_WINDOW = s:plugin.flags.on_new_window
+let s:f_TO_SET = s:plugin.flags.to_set

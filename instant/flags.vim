@@ -36,6 +36,22 @@ function! s:EnsureIsIn(values) abort
   return {value -> maktaba#ensure#IsIn(value, a:values)}
 endfunction
 
+""
+" Returns a callable function that iterates over a list of items and passes
+" each element into {Predicate}.
+function! s:EnsureThatAll(Predicate) abort
+  call maktaba#ensure#IsCallable(a:Predicate)
+  return {items -> map(items, {_, Item -> a:Predicate(Item)})}
+endfunction
+
+""
+" When set to zero, disables vim-unfocus's autocommands; this essentially
+" "deactivates" the plugin. Set to 1 to reenable.
+"
+" This value can be modified at runtime (i.e. outside of the .vimrc) and will
+" still behave as expected.
+call s:plugin.Flag('plugin[autocmds]', 1)
+
 " (private)
 " A list of all settings provided in @flag(to_set). Repopulated whenever
 " @flag(to_set) changes.
@@ -60,6 +76,20 @@ function! s:UpdatedWatchedSettings(to_set)
   let l:settings = sort(keys(l:settings_dict))
 
   call s:plugin.Flag('watched_settings', l:settings)
+endfunction
+
+""
+" Verify that @flag(to_set) is a dict, then add default on_focus, on_unfocus
+function! s:InitializeToSet(to_set) abort
+  call maktaba#ensure#IsDict(a:to_set)
+  call extend(a:to_set, {'on_focus': {}, 'on_unfocus': {}}, 'keep')
+  if !maktaba#value#IsDict(a:to_set.on_focus)
+      \ || !maktaba#value#IsDict(a:to_set.on_unfocus)
+    throw maktaba#error#BadValue(
+        \ 'on_focus and on_unfocus must be dicts, gave: %s, %s',
+        \ string(a:to_set.on_focus), string(a:to_set.on_unfocus))
+  endif
+  return a:to_set
 endfunction
 
 ""
@@ -105,7 +135,7 @@ endfunction
 " purpose.
 "
 call s:plugin.Flag('to_set', {})
-call s:plugin.flags.to_set.AddTranslator(function('maktaba#ensure#IsDict'))
+call s:plugin.flags.to_set.AddTranslator(function('s:InitializeToSet'))
 call s:plugin.flags.to_set.AddCallback(function('s:UpdatedWatchedSettings'))
 
 ""
@@ -145,12 +175,12 @@ call s:plugin.flags.store_settings_per.AddTranslator(
 "   the current window are carried over and used as the "focused" setting
 "   values in the new window. This mimics vim's default behavior.
 "
-" - use_watched_defaults: The "focused" setting values from @flag(to_set) are
+" - use_focused_settings: The "focused" setting values from @flag(to_set) are
 "   applied on entering the new window.
 "
 call s:plugin.Flag('on_new_window', 'inherit_from_current')
 call s:plugin.flags.on_new_window.AddTranslator(
-    \ s:EnsureIsIn(['inherit_from_current', 'use_watched_defaults']))
+    \ s:EnsureIsIn(['inherit_from_current', 'use_focused_settings']))
 
 ""
 " A list of callables; if any of these return a truthy value when given a
@@ -186,5 +216,4 @@ call s:plugin.Flag('ignore_if', [
     \ ])
 " ensure that ignore_if contains only funcrefs
 call s:plugin.flags.ignore_if.AddTranslator(
-    \ {funclist ->
-        \ map(funclist, {_, Func -> maktaba#ensure#IsFuncref(Func)})})
+    \ s:EnsureThatAll(function('maktaba#ensure#IsFuncref')))
