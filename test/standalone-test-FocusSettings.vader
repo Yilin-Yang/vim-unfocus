@@ -1,9 +1,3 @@
-""
-" Run tests for FocusSettings.
-"
-" vim-unfocus' autocmds for focusing/unfocusing windows should not be active,
-" or these tests will break.
-
 Execute (Setup):
   let g:plugin = maktaba#plugin#Get('vim-unfocus')
   call g:plugin.Flag('plugin[autocmds]', 0)
