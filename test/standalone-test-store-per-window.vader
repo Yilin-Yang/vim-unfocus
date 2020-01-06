@@ -1,5 +1,7 @@
 Execute (Setup):
   let g:plugin = maktaba#plugin#Get('vim-unfocus')
+  call g:plugin.flags.plugin.Set({'autocmds': 1})
+
   command! SetUp set number | set relativenumber
   SetUp
   call g:plugin.Flag('to_set', {'on_unfocus': {'&number': 0, '&relativenumber': 0},

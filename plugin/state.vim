@@ -40,4 +40,4 @@ call s:plugin.flags.store_settings_per.AddCallback(
 ""
 " The @dict(FocusSettings) and @dict(WindowInfo) for the most recently focused
 " window in a dictionary.
-let g:unfocus_last_focused = {'focus_settings': 0, 'window_info': 0}
+let g:unfocus_last_focused = {'focus_settings': v:null, 'window_info': v:null}

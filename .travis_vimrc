@@ -26,3 +26,6 @@ call AddDependency('vim-maktaba')
 call AddDependency('TypeVim')
 
 call maktaba#plugin#Detect()
+let g:plugin = maktaba#plugin#Get('vim-unfocus')
+" disable autocmds by default and only reenable them for integration tests
+call g:plugin.Flag('plugin[autocmds]', 0)
