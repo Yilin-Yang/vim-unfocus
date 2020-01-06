@@ -29,7 +29,7 @@ function! s:ChangeFocusSettingsMap(store_settings_per) abort
   if a:store_settings_per ==# 'window'
     if s:map_per_window is v:null
       let s:map_per_window =
-          \ unfocus#FocusSettingsMap#New(s:f_TO_SET, s:INITIALIZE_FOCUSED)
+          \ unfocus#WindowFocusSettingsMap#New(s:f_TO_SET, s:INITIALIZE_FOCUSED)
     endif
     let s:unfocus_focus_settings_map = s:map_per_window
   " elseif a:store_settings_per ==# 'window_and_buffer'
