@@ -109,9 +109,7 @@ function! unfocus#SwitchFocusIfDifferent(winid) abort
   let g:unfocus_last_focused =
       \ {'focus_settings': l:new_focus_settings, 'window_info': l:new_window}
 
-  if l:existed
-    call l:new_focus_settings.Focus(l:new_window, s:f_WATCHED_SETTINGS.Get())
-  endif
+  call l:new_focus_settings.Focus(l:new_window, s:f_WATCHED_SETTINGS.Get())
 
   return 1
 endfunction
