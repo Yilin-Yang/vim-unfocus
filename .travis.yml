@@ -12,17 +12,21 @@ before_script:
       sudo add-apt-repository ppa:neovim-ppa/stable   -y
     fi
   - sudo apt-get update  -q
-  - sudo apt-get install -y language-pack-de language-pack-es
+  # - |
+  #   sudo apt-get remove vim -y
+  #   sudo apt-get install -y vim
+  #   vim  --version
   - |
-    sudo apt-get remove vim -y
-    sudo apt-get install -y vim
-    vim  --version
-  - |
+    echo 'Install neovim.'
     sudo apt-get install -y neovim vim
     nvim --version
-  - git clone https://github.com/junegunn/vader.vim.git test/vader.vim
+  - |
+    echo "Clone dependencies."
+    git clone https://github.com/junegunn/vader.vim.git test/vader.vim
+    git clone https://github.com/Google/vim-maktaba ~/.vim/bundle/vim-maktaba
+    git clone https://github.com/Yilin-Yang/TypeVim.git ~/.vim/bundle/TypeVim
 
 script:
   - cd test  # to make handling filepaths easier
-  - ./run_tests.sh --international --neovim
-  - ./run_tests.sh --international
+  - ./run_tests.sh --neovim
+  - ./run_tests.sh
