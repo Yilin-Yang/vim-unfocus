@@ -15,7 +15,7 @@ endif
 " settings in your .vimrc can look like:
 " >
 "   " with Glaive,
-"   Glaive vim-unfocus on_new_window='do_nothing'
+"   Glaive vim-unfocus on_new_window='inherit_from_current'
 "
 "   " with direct manipulation of maktaba flags,
 "   let g:vim_unfocus = maktaba#plugin#Get('vim-unfocus')
