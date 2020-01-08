@@ -32,7 +32,12 @@ function! s:ChangeFocusSettingsMap(store_settings_per) abort
           \ unfocus#WindowFocusSettingsMap#New(s:f_TO_SET, s:INITIALIZE_FOCUSED)
     endif
     let s:unfocus_focus_settings_map = s:map_per_window
-  " elseif a:store_settings_per ==# 'window_and_buffer'
+  elseif a:store_settings_per ==# 'window_and_buffer'
+    if s:map_per_window_and_buffer is v:null
+      let s:map_per_window_and_buffer =
+          \ unfocus#WindowBufferFocusSettingsMap#New(s:f_TO_SET, s:INITIALIZE_FOCUSED)
+    endif
+    let s:unfocus_focus_settings_map = s:map_per_window_and_buffer
   " elseif a:store_settings_per ==# 'buffer'
   else
     throw maktaba#error#Failure(

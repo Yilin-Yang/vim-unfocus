@@ -39,6 +39,7 @@ let s:PROTOTYPE = typevim#make#Class(
       \ 'GetVals': function(s:autoload_prefix.'GetVals'),
       \ 'SetVals': function(s:autoload_prefix.'SetVals'),
       \ 'Exists': function(s:autoload_prefix.'Exists'),
+      \ 'Focused': function(s:autoload_prefix.'Focused'),
     \ })
 
 function! s:CheckType(Obj) abort
@@ -131,4 +132,17 @@ endfunction
 function! unfocus#WindowInfo#Exists() dict abort
   call s:CheckType(l:self)
   return !empty(getwininfo(l:self.winid))
+endfunction
+
+""
+" Return true if the user's cursor is in the managed window and false
+" otherwise.
+"
+" If the managed window no longer exists, always returns false.
+function! unfocus#WindowInfo#Focused() dict abort
+  call s:CheckType(l:self)
+  if !l:self.Exists()
+    return 0
+  endif
+  return win_getid() ==# l:self.winid
 endfunction

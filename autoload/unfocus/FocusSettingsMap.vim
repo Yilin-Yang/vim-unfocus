@@ -18,10 +18,8 @@
 let s:typename = 'FocusSettingsMap'
 
 ""
-" Construct a new FocusSettingsMap from {InitWindow}, a callable
-" that takes in a @dict(WindowInfo) and initializes the window as an
-" "unfocused" window prior to the construction of a dict(FocusSettings)
-" object, and a @dict(Flag) of settings {to_set} structured like @flag(to_set).
+" Construct a new FocusSettingsMap from a @dict(Flag) of settings {to_set}
+" structured like @flag(to_set).
 "
 " @throws WrongType if {InitWindow} is not a function or {to_set} is not a @dict(Flag) objects.
 function! unfocus#FocusSettingsMap#New(to_set) abort

@@ -105,7 +105,7 @@ function! unfocus#SwitchFocusIfDifferent(winid, focus_settings) abort
     return 0
   endif
 
-  if !empty(l:last_window) && l:last_window.Exists()
+  if !empty(l:last_window) && l:last_window.Exists() && !l:last_window.Focused()
     call l:last_focus_settings.Unfocus(l:last_window, s:f_WATCHED_SETTINGS.Get())
   endif
 

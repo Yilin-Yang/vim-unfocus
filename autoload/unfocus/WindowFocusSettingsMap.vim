@@ -5,6 +5,7 @@
 " per each window-ID.
 
 let s:typename = 'WindowFocusSettingsMap'
+let s:prefix = 'unfocus#WindowFocusSettingsMap#'
 
 ""
 " Construct a new WindowFocusSettingsMap from {InitWindow}, a callable
@@ -13,12 +14,12 @@ let s:typename = 'WindowFocusSettingsMap'
 " object, and a @dict(Flag) of settings {to_set} structured like @flag(to_set).
 "
 " @throws WrongType if {InitWindow} is not a function or {to_set} is not a @dict(Flag) objects.
-function! unfocus#WindowFocusSettingsMap#New(to_set, InitWindow) abort
+function! {s:prefix}New(to_set, InitWindow) abort
   let l:base = unfocus#FocusSettingsMap#New(a:to_set)
   let l:new = {
       \ 'SettingsForWinID': typevim#make#Member('SettingsForWinID'),
       \ 'AddUnseen': typevim#make#Member('AddUnseen'),
-      \ '__InitWindow': maktaba#ensure#IsFuncref(a:InitWindow),
+      \ '_InitWindow': maktaba#ensure#IsFuncref(a:InitWindow),
       \ '__winid_to_winstate': {},
       \ }
   return typevim#make#Derived(s:typename, l:base, l:new)
@@ -26,6 +27,45 @@ endfunction
 
 function! s:CheckType(Obj) abort
   call typevim#ensure#IsType(a:Obj, s:typename)
+endfunction
+
+""
+" "Templated" implementation of SettingsForWinID.
+"
+" {self} is the WindowFocusSettingsMap. {dict} is the dictionary in which to
+" look up an existing @dict(WindowState). {WinidToKey} is a function that
+" takes in a {winid} and converts it into the key used for lookup in {dict}.
+" {winid} and [construct_as] are the same as in SettingsForWinID.
+function! {s:prefix}_SettingsForWinID(self, dict, WinidToKey, winid, ...) abort
+  call s:CheckType(a:self)
+  let l:construct_as = get(a:000, 0, 'to_unfocus')
+  let l:InitWindow = a:self._InitWindow
+
+  let l:key = a:WinidToKey(a:winid)
+  let l:winstate = get(a:dict, l:key, v:null)
+  if l:winstate is v:null
+    " construct the new FocusSettings object
+    let l:winstate = unfocus#WindowState#New(a:winid)
+    let l:wininfo = l:winstate.wininfo
+    call l:InitWindow(l:wininfo)
+    if l:construct_as ==# 'to_unfocus'
+      let l:winstate.settings =
+          \ a:self._MakeFocusSettingsForWin(l:wininfo, 'to_unfocus')
+    elseif l:construct_as ==# 'default_unfocused'
+      if a:winid ==# win_getid()
+        let l:winstate.settings =
+            \ a:self._MakeFocusSettingsForWin(l:wininfo, 'focused')
+      else
+        let l:winstate.settings =
+            \ a:self._MakeFocusSettingsForWin(l:wininfo, 'unfocused')
+      endif
+    else
+      throw maktaba#error#BadValue(
+          \ 'unrecognized value for construct_as: %s', l:construct_as)
+    endif
+    let a:dict[l:key] = l:winstate
+  endif
+  return l:winstate.settings
 endfunction
 
 ""
@@ -47,42 +87,17 @@ endfunction
 "
 " @throws BadValue if [construct_as] is invalid.
 " @throws WrongType if {winid} is not a number or [construct_as] is not a string.
-function! unfocus#WindowFocusSettingsMap#SettingsForWinID(winid, ...) dict abort
-  call s:CheckType(l:self)
-  let l:construct_as = get(a:000, 0, 'to_unfocus')
-
-  let l:winstate = get(l:self.__winid_to_winstate, a:winid, v:null)
-  if l:winstate is v:null
-    " construct the new FocusSettings object
-    let l:wininfo = unfocus#WindowInfo#New(a:winid)
-    let l:winstate = deepcopy(s:WINDOW_STATE_PROTOTYPE)
-    let l:winstate.wininfo = l:wininfo
-    if l:construct_as ==# 'to_unfocus'
-      let l:winstate.settings =
-          \ l:self._MakeFocusSettingsForWin(l:wininfo, 'to_unfocus')
-    elseif l:construct_as ==# 'default_unfocused'
-      if a:winid ==# win_getid()
-        let l:winstate.settings =
-            \ l:self._MakeFocusSettingsForWin(l:wininfo, 'focused')
-      else
-        let l:winstate.settings =
-            \ l:self._MakeFocusSettingsForWin(l:wininfo, 'unfocused')
-      endif
-    else
-      throw maktaba#error#BadValue(
-          \ 'unrecognized value for construct_as: %s', l:construct_as)
-    endif
-    let l:self.__winid_to_winstate[a:winid] = l:winstate
-  endif
-  return l:winstate.settings
+function! {s:prefix}SettingsForWinID(winid, ...) dict abort
+  return call(
+      \ 'unfocus#WindowFocusSettingsMap#_SettingsForWinID',
+      \ [l:self, l:self.__winid_to_winstate, { winid -> winid }, a:winid]
+          \ + a:000)
 endfunction
-let s:WINDOW_STATE_PROTOTYPE = typevim#make#Class(
-    \ 'WindowState', {'wininfo': v:null, 'settings': v:null})
 
 ""
 " Generate @dict(FocusSettings) objects for all "unregistered" windows,
 " buffers, or window/buffer pairs.
-function! unfocus#WindowFocusSettingsMap#AddUnseen() dict abort
+function! {s:prefix}AddUnseen() dict abort
   call s:CheckType(l:self)
   let l:tabinfos = gettabinfo()
   for l:tabinfo in l:tabinfos | for l:winid in l:tabinfo.windows
