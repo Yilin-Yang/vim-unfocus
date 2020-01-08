@@ -1,6 +1,17 @@
 let [s:plugin, s:enter] = maktaba#plugin#Enter(expand('<sfile>:p'))
 
 ""
+" Return (what should be) the first potentially valid |winid|.
+"
+" This value seems consistent between vim and neovim, but it isn't explicitly
+" guaranteed by the documentation. The benefits of error-checking (against
+" functions being given window numbers rather than |winid|s) probably
+" outweigh the reliance on an undocumented constant.
+function! unfocus#FirstValidWinID() abort
+  return 1000
+endfunction
+
+""
 " Return true if the |window| given {winid} (as returned by |win_getid()| is
 " focused, false otherwise.
 "
@@ -131,6 +142,9 @@ function! unfocus#AddUnseen() abort
   call UnfocusGetFocusSettingsMap().AddUnseen()
 endfunction
 
+""
+" Apply settings for a newly created window based on the value of the user's
+" @flag(on_new_window).
 function! unfocus#InitializeFocused(wininfo) abort
   call typevim#ensure#IsType(a:wininfo, 'WindowInfo')
   let l:on_new_window = s:f_ON_NEW_WINDOW.Get()
@@ -146,3 +160,22 @@ function! unfocus#InitializeFocused(wininfo) abort
 endfunction
 let s:f_ON_NEW_WINDOW = s:plugin.flags.on_new_window
 let s:f_TO_SET = s:plugin.flags.to_set
+
+""
+" Returns 1 if the given {winid} corresponds to an existing window and 0
+" otherwise.
+"
+" This function uses |winbufnr| in its implementation, but its added error
+" checking protects against the accidental use of values (like most strings)
+" that coerce into the numeric value 0, which |winbufnr| handles as a special
+" case.
+"
+" @throws BadValue if {winid} is less than 1000, which seems to be the first valid |winid|.
+" @throws WrongType if the given value isn't a number.
+function! unfocus#WinIDExists(winid) abort
+  call maktaba#ensure#IsNumber(a:winid)
+  if a:winid <# unfocus#FirstValidWinID()
+    throw maktaba#error#BadValue("given number isn't a valid winid: %d", a:winid)
+  endif
+  return winbufnr(a:winid) !=# -1
+endfunction

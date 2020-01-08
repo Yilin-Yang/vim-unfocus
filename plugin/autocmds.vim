@@ -7,6 +7,8 @@ if exists('s:did_enter')
 endif
 let s:did_enter = 1
 
+let s:first_run = 1
+
 ""
 " Toggle the unfocus_update augroup based on the value of @flag(plugin). Allow
 " runtime loading/disdabling of the vim-unfocus autocmd groups.
@@ -19,12 +21,30 @@ function! s:EnableDisableAutocmds(plugin_flag) abort
       autocmd VimEnter,BufEnter,BufWinEnter,WinEnter *
           \ call unfocus#SwitchFocusIfDifferent(
               \ win_getid(), unfocus#CurrentFocusSettings(win_getid()))
+
+      autocmd WinLeave  * call unfocus#cleanup#MarkLeavingWindow(win_getid())
+      autocmd WinEnter  * call unfocus#cleanup#CleanUpLeftWindowIfClosed()
+      autocmd TabClosed * call unfocus#cleanup#CleanUpClosedTab(expand('<afile>'))
+      autocmd WinNew    * call unfocus#cleanup#MarkNewWindowInTab(win_getid(), tabpagenr())
     augroup end
+
+    if !s:first_run
+      call unfocus#cleanup#GarbageCollect()
+      call unfocus#AddUnseen()
+    endif
+
   else  " disable autocmds
     augroup unfocus_update
       au!
     augroup end
     augroup! unfocus_update
+
+    if !s:first_run
+      call unfocus#cleanup#GarbageCollect()
+    endif
+
   endif
 endfunction
 call s:plugin.flags.plugin.AddCallback(function('s:EnableDisableAutocmds'))
+
+let s:first_run = 0

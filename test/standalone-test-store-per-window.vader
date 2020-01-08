@@ -2,15 +2,14 @@ Execute (Setup):
   let g:plugin = maktaba#plugin#Get('vim-unfocus')
   call g:plugin.flags.plugin.Set({'autocmds': 1})
 
-  command! SetUp set number | set relativenumber
-  SetUp
+  command! SetUp tabnew | set number | set relativenumber
+  command! TearDown tabclose
+
   call g:plugin.Flag('to_set', {'on_unfocus': {'&number': 0, '&relativenumber': 0},
                              \  'on_focus': {'&number': 1, '&relativenumber': 1}})
 
 Execute (unfocuses when we switch to a new window, but reenables when we switch back):
-  AssertEqual 1, &number
-  AssertEqual 1, &relativenumber
-  tabnew
+  SetUp
 
   let g:old_win = win_getid()
   vnew
@@ -22,8 +21,8 @@ Execute (unfocuses when we switch to a new window, but reenables when we switch 
   AssertEqual 0, unfocus#WinVarFromID(g:old_win, '&number')
   AssertEqual 0, unfocus#WinVarFromID(g:old_win, '&relativenumber')
 
-Then (Clean Up):
-  tabclose
+Then:
+  TearDown
 
 
 Execute (doesn't unfocus when we open a new buffer in the same window):
@@ -40,3 +39,23 @@ Execute (doesn't unfocus when we open a new buffer in the same window):
 
   AssertEqual 1, unfocus#WinVarFromID(g:cur_win, '&number')
   AssertEqual 1, unfocus#WinVarFromID(g:cur_win, '&relativenumber')
+
+Then:
+  TearDown
+
+
+Execute (unfocuses and refocuses when we open the same buffer in a new tab):
+  SetUp
+  edit a_buffer
+  let g:cur_win = win_getid()
+
+  AssertEqual 1, unfocus#WinVarFromID(g:cur_win, '&number')
+  AssertEqual 1, unfocus#WinVarFromID(g:cur_win, '&relativenumber')
+
+  execute 'tabnew '.bufname('%')
+
+  AssertEqual 1, &number
+  AssertEqual 1, &relativenumber
+
+  AssertEqual 0, unfocus#WinVarFromID(g:cur_win, '&number')
+  AssertEqual 0, unfocus#WinVarFromID(g:cur_win, '&relativenumber')

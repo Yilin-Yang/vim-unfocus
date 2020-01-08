@@ -1,0 +1,32 @@
+Execute (Setup):
+  let g:plugin = maktaba#plugin#Get('vim-unfocus')
+  call g:plugin.flags.plugin.Set({'autocmds': 1})
+
+  let g:fs_map = UnfocusGetFocusSettingsMap()
+
+  command! SetUp tabnew | set number | set relativenumber
+  command! TearDown tabclose
+
+  function! TestStateCleanup() abort
+    SetUp
+
+    let old_winid = win_getid()
+    Assert g:fs_map.SettingsExistForWinID(old_winid), "settings weren't created for a new window"
+
+    split
+    let new_winid = win_getid()
+    AssertNotEqual old_winid, new_winid, "didn't switch to new split"
+    Assert g:fs_map.SettingsExistForWinID(old_winid), "settings don't still exist for still-open window"
+    Assert g:fs_map.SettingsExistForWinID(new_winid), "settings weren't created for new split"
+
+    TearDown
+
+    Assert !g:fs_map.SettingsExistForWinID(old_winid), "first new window wasn't cleaned up"
+    Assert !g:fs_map.SettingsExistForWinID(new_winid), "second new window wasn't cleaned up"
+  endfunction
+
+Execute (cleans up state for windows after they've been closed):
+  call TestStateCleanup()
+
+Execute (ditto, but make sure that this isn't something that only works once):
+  call TestStateCleanup()

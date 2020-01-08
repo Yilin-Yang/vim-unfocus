@@ -28,8 +28,10 @@ function! {s:prefix}New(to_set, InitWindow) abort
   let l:new = {
       \ 'SettingsForWinID': typevim#make#Member('SettingsForWinID'),
       \ '_MakeFocusSettingsForWin': typevim#make#Member('_MakeFocusSettingsForWin'),
+      \ 'RemoveSettingsForWinID': typevim#make#Member('RemoveSettingsForWinID'),
+      \ 'SettingsExistForWinID': typevim#make#Member('SettingsExistForWinID'),
       \ 'AddUnseen': typevim#make#Member('AddUnseen'),
-      \ '_MakeFocusSettingsForWin': typevim#make#Member('_MakeFocusSettingsForWin'),
+      \ 'GarbageCollect': typevim#make#Member('GarbageCollect'),
       \ 'to_set': s:EnsureIsMaktabaFlag(a:to_set),
       \ '__winid_to_winstate': {},
       \ }
@@ -130,6 +132,23 @@ endfunction
 let s:WINDOW_STATE_PROTOTYPE = typevim#make#Class(
     \ 'WindowState', {'wininfo': v:null, 'settings': v:null})
 
+""
+" Remove the @dict(FocusSettings) for {winid}. Used as a cleanup operation.
+" Returns 1 if a @dict(FocusSettings) had been removed, 0 otherwise.
+function! {s:prefix}RemoveSettingsForWinID(winid) dict abort
+  call s:CheckType(l:self)
+  if has_key(l:self.__winid_to_winstate, a:winid)
+    unlet l:self.__winid_to_winstate[a:winid]
+    return 1
+  endif
+  return 0
+endfunction
+
+""
+" Return 1 if a @dict(FocusSettings) exists for {winid} and 0 otherwise.
+function! {s:prefix}SettingsExistForWinID(winid) dict abort
+  return has_key(l:self.__winid_to_winstate, a:winid)
+endfunction
 
 ""
 " Generate @dict(FocusSettings) objects for all "unregistered" windows,
@@ -140,4 +159,17 @@ function! {s:prefix}AddUnseen() dict abort
   for l:tabinfo in l:tabinfos | for l:winid in l:tabinfo.windows
     call l:self.SettingsForWinID(l:winid, 'default_unfocused')
   endfor | endfor
+endfunction
+
+""
+" Remove the @dict(FocusSettings) for all |winid| entries that no longer exist
+" in the object's internal dict.
+function! {s:prefix}GarbageCollect() dict abort
+  call s:CheckType(l:self)
+  for l:winid in keys(l:self.__winid_to_winstate)
+    if unfocus#WinIDExists(l:winid)
+      continue
+    endif
+    unlet l:self.__winid_to_winstate[l:winid]
+  endfor
 endfunction
