@@ -11,7 +11,7 @@ let s:did_enter = 1
 " Toggle the unfocus_update augroup based on the value of @flag(plugin). Allow
 " runtime loading/disdabling of the vim-unfocus autocmd groups.
 function! s:EnableDisableAutocmds(plugin_flag) abort
-  let l:enable_autocmds = get(a:plugin_flag, 'autocmds', 1)
+  let l:enable_autocmds = get(a:plugin_flag, 'autocmds', 0)
   if l:enable_autocmds
     " Actions that fire whenever the active window changes.
     augroup unfocus_update

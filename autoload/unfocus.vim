@@ -94,10 +94,6 @@ let s:f_IGNORE_IF = s:plugin.flags.ignore_if
 " {focus_settings} for the new window {winid}, mark it as the last focused
 " window, and return 1. Else, return 0.
 function! unfocus#SwitchFocusIfDifferent(winid, focus_settings) abort
-  let s:unfocus_last_focused =
-      \ get(s:, 'unfocus_last_focused',
-          \ {'focus_settings': v:null, 'window_info': v:null})
-
   let l:last_focus_settings = s:unfocus_last_focused.focus_settings
   let l:last_window = s:unfocus_last_focused.window_info
 
@@ -117,6 +113,7 @@ function! unfocus#SwitchFocusIfDifferent(winid, focus_settings) abort
 
   return 1
 endfunction
+let s:unfocus_last_focused = {'focus_settings': v:null, 'window_info': v:null}
 let s:f_WATCHED_SETTINGS = s:plugin.flags.watched_settings
 
 ""

@@ -120,11 +120,11 @@ endfunction
 " window; to unfocus a window is to leave the window, such as by opening a new
 " split or by switching tabs.
 "
-" Each window (depending on user settings; see @flag(store_settings_per))
-" keeps two settings dicts: settings to be set when focused, and to be set
-" when unfocused. The window's unfocused settings dict is always initialized
-" to be equal to the user's unfocus settings. The window's focused settings
-" dict is usually initialized to be equal to the user's focus settings.
+" Each window keeps two settings dicts: settings to be set when focused, and
+" to be set when unfocused. The window's unfocused settings dict is always
+" initialized to be equal to the user's unfocus settings. The window's focused
+" settings dict is usually initialized to be equal to the user's focus
+" settings.
 "
 " When focusing an unfocused window, the current values of all of the watched
 " settings for that window are stashed as that window's unfocused settings,
@@ -143,34 +143,6 @@ endfunction
 call s:plugin.Flag('to_set', {'on_focus': {}, 'on_unfocus': {}})
 call s:plugin.flags.to_set.AddTranslator(function('s:InitializeToSet'))
 call s:plugin.flags.to_set.AddCallback(function('s:UpdatedWatchedSettings'))
-
-
-""
-" The most granular kind of object for which to stash focused and unfocused
-" settings dicts.
-"
-" Possible values and their effects are:
-"
-" - "window": Settings are stored for every individual window/"split". Opening
-"   a new buffer in an existing window does not count as unfocusing that
-"   window. Switching to another window showing the same buffer counts as
-"   unfocusing the current window and focusing the new window.
-"
-" - "window_and_buffer": Settings are stored for every pairing of window and
-"   buffer. Opening a new buffer in an existing window counts as unfocusing
-"   the old window-buffer pair and focusing a new window-buffer pair.
-"   Switching to another window counts as unfocusing the current window and
-"   focusing the new window.
-"
-" - "buffer": Settings are stored for every buffer. Switching to another
-"   window showing the same buffer does not swap focused/unfocused settings.
-"   Opening another buffer in the current window will unfocus the old buffer
-"   and focus the new buffer. Focusing or unfocusing a buffer will affect
-"   every window in which that buffer is visible.
-"
-call s:plugin.Flag('store_settings_per', 'window')
-call s:plugin.flags.store_settings_per.AddTranslator(
-    \ s:EnsureIsIn(['window', 'window_and_buffer', 'buffer']))
 
 
 ""

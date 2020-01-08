@@ -19,7 +19,7 @@ to configure dapper.nvim's maktaba flags. Configuring vim-unfocus's settings
 in your .vimrc can look like:
 >
   " with Glaive,
-  Glaive vim-unfocus on_new_window='do_nothing'
+  Glaive vim-unfocus on_new_window='inherit_from_current'
 
   " with direct manipulation of maktaba flags,
   let g:vim_unfocus = maktaba#plugin#Get('vim-unfocus')
@@ -50,11 +50,10 @@ are "unfocused". To focus a window is to enter/"switch to" the window; to
 unfocus a window is to leave the window, such as by opening a new split or by
 switching tabs.
 
-Each window (depending on user settings; see |vim-unfocus:store_settings_per|)
-keeps two settings dicts: settings to be set when focused, and to be set when
-unfocused. The window's unfocused settings dict is always initialized to be
-equal to the user's unfocus settings. The window's focused settings dict is
-usually initialized to be equal to the user's focus settings.
+Each window keeps two settings dicts: settings to be set when focused, and to
+be set when unfocused. The window's unfocused settings dict is always
+initialized to be equal to the user's unfocus settings. The window's focused
+settings dict is usually initialized to be equal to the user's focus settings.
 
 When focusing an unfocused window, the current values of all of the watched
 settings for that window are stashed as that window's unfocused settings, and
@@ -70,31 +69,6 @@ dict when the window is unfocused. This prevents vim-unfocus from clobbering
 window variables that the user changes on purpose.
 
 Default: {'on_focus': {}, 'on_unfocus': {}} `
-
-                                              *vim-unfocus:store_settings_per*
-The most granular kind of object for which to stash focused and unfocused
-settings dicts.
-
-Possible values and their effects are:
-
-"window": Settings are stored for every individual window/"split". Opening a
-  new buffer in an existing window does not count as unfocusing that window.
-  Switching to another window showing the same buffer counts as unfocusing the
-  current window and focusing the new window.
-
-"window_and_buffer": Settings are stored for every pairing of window and
-  buffer. Opening a new buffer in an existing window counts as unfocusing the
-  old window-buffer pair and focusing a new window-buffer pair. Switching to
-  another window counts as unfocusing the current window and focusing the new
-  window.
-
-"buffer": Settings are stored for every buffer. Switching to another window
-  showing the same buffer does not swap focused/unfocused settings. Opening
-  another buffer in the current window will unfocus the old buffer and focus
-  the new buffer. Focusing or unfocusing a buffer will affect every window in
-  which that buffer is visible.
-
-Default: 'window' `
 
                                                    *vim-unfocus:on_new_window*
 How to initialize watched window settings when opening an entirely new window
@@ -147,6 +121,7 @@ When set to zero, disables most (if not all) of vim-unfocus's persistent,
 stateful variables. It should be fine to leave this enabled while disabling
 `plugin[autocmds]`, but disabling this flag is safest when trying to
 completely disable vim-unfocus at runtime.
+
 Default: 1 `
 
 ==============================================================================
