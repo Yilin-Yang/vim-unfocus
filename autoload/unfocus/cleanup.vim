@@ -52,7 +52,7 @@ function! s:ValidateTabPageNr(Tabpagenr) abort
   endif
   if l:tabpagenr <# 1
     throw maktaba#error#BadValue(
-        \ 'cannot give a negative tabpagenr: %d', l:tabpagenr)
+        \ 'cannot give a non-positive tabpagenr: %s', a:Tabpagenr)
   endif
   return l:tabpagenr
 endfunction
