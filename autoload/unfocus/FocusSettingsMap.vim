@@ -157,7 +157,10 @@ function! {s:prefix}AddUnseen() dict abort
   call s:CheckType(l:self)
   let l:tabinfos = gettabinfo()
   for l:tabinfo in l:tabinfos | for l:winid in l:tabinfo.windows
-    call l:self.SettingsForWinID(l:winid, 'default_unfocused')
+    try
+      call l:self.SettingsForWinID(l:winid, 'default_unfocused')
+    catch /ERROR(NotFound)/
+    endtry
   endfor | endfor
 endfunction
 

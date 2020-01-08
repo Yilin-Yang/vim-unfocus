@@ -84,6 +84,25 @@ function! {s:prefix}CleanUpLeftWindowIfClosed() abort
 endfunction
 
 ""
+" Store the {tabpagenr} of a tab being left through a TabLeave event. When a
+" |TabClosed| event fires, the stored tab page number from the last call to
+" this function is the tabpagenr of the tab that was closed.
+"
+" This is necessary as a workaround for the fact that, while |<afile>| in
+" |TabClosed| expands to the closed tab page's number in neovim, it does not
+" in Vim.
+function! {s:prefix}StoreLeftTabPage(tabpagenr) abort
+  let s:last_left_tab = s:ValidateTabPageNr(a:tabpagenr)
+endfunction
+let s:last_left_tab = 1
+
+""
+" Return the value that had been stored by @function(unfocus#cleanup#StoreLeftTabPage).
+function! {s:prefix}LastLeftTabPage() abort
+  return s:last_left_tab
+endfunction
+
+""
 " Perform cleanup work for all of the |winid|s that might have been open in the
 " given {tabpagenr}.
 function! {s:prefix}CleanUpClosedTab(tabpagenr) abort

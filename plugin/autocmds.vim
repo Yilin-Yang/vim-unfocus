@@ -24,7 +24,9 @@ function! s:EnableDisableAutocmds(plugin_flag) abort
 
       autocmd WinLeave  * call unfocus#cleanup#MarkLeavingWindow(win_getid())
       autocmd WinEnter  * call unfocus#cleanup#CleanUpLeftWindowIfClosed()
-      autocmd TabClosed * call unfocus#cleanup#CleanUpClosedTab(expand('<afile>'))
+      autocmd TabLeave  * call unfocus#cleanup#StoreLeftTabPage(tabpagenr())
+      autocmd TabClosed * call unfocus#cleanup#CleanUpClosedTab(
+                              \ unfocus#cleanup#LastLeftTabPage())
       autocmd WinNew    * call unfocus#cleanup#MarkNewWindowInTab(win_getid(), tabpagenr())
     augroup end
 
