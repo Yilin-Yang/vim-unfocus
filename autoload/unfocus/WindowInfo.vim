@@ -1,7 +1,7 @@
 ""
 " Helper object for uniquely identifying a window and setting window values.
 "
-" Contains a `bufnr`, a `winid`, and a `tabnr`. Combined, these can represent
+" Contains a `bufnr` and a `winid`. Combined, these can represent
 " the state of a buffer being currently open in a particular window.
 
 let s:typename = 'WindowInfo'
@@ -22,10 +22,6 @@ function! unfocus#WindowInfo#New(winid) abort
   if l:new.bufnr ==# -1
     throw maktaba#error#NotFound('bufnr lookup failed for winid: %d', a:winid)
   endif
-  let l:new.tabnr = win_id2tabwin(a:winid)[0]
-  if l:new.tabnr ==# 0
-    throw maktaba#error#NotFound('tabpage lookup failed for winid %d', a:winid)
-  endif
   let l:new.winid = a:winid
   return l:new
 endfunction
@@ -33,7 +29,7 @@ let s:PROTOTYPE = typevim#make#Class(
     \ s:typename,
     \ { 'bufnr': v:null,
       \ 'winid': v:null,
-      \ 'tabnr': v:null,
+      \ 'tabnr': function(s:autoload_prefix.'tabnr'),
       \ 'getwinvar': function(s:autoload_prefix.'getwinvar'),
       \ 'setwinvar': function(s:autoload_prefix.'setwinvar'),
       \ 'GetVals': function(s:autoload_prefix.'GetVals'),
@@ -53,6 +49,20 @@ function! s:AssertStillExists(self) abort
 endfunction
 
 ""
+" Retrieve the |tabpagenr()| in which this window is currently being shown.
+"
+" @throws NotFound if the window no longer exists, or if a |tabpagenr()| cannot be retrieved.
+function! unfocus#WindowInfo#tabnr() dict abort
+  call s:AssertStillExists(l:self)
+  let l:tabnr = win_id2tabwin(l:self.winid)[0]
+  if l:tabnr ==# 0
+    throw maktaba#error#NotFound(
+        \ 'tabpage lookup failed for winid %d', l:self.winid)
+  endif
+  return l:tabnr
+endfunction
+
+""
 " Retrieve the value of a particular variable (window-local setting,
 " window-local variable, etc.) for this window. Returns [default] if no value
 " could be retrieved.
@@ -66,7 +76,7 @@ function! unfocus#WindowInfo#getwinvar(varname, ...) dict abort
   call s:AssertStillExists(l:self)
   call maktaba#ensure#IsString(a:varname)
   let l:default = get(a:000, 0, '')
-  return gettabwinvar(l:self.tabnr, l:self.winid, a:varname, l:default)
+  return gettabwinvar(l:self.tabnr(), l:self.winid, a:varname, l:default)
 endfunction
 
 ""
@@ -78,7 +88,7 @@ function! unfocus#WindowInfo#setwinvar(varname, val) dict abort
   call s:CheckType(l:self)
   call s:AssertStillExists(l:self)
   call maktaba#ensure#IsString(a:varname)
-  call settabwinvar(l:self.tabnr, l:self.winid, a:varname, a:val)
+  call settabwinvar(l:self.tabnr(), l:self.winid, a:varname, a:val)
 endfunction
 
 ""
@@ -121,7 +131,7 @@ function! unfocus#WindowInfo#SetVals(vars_and_vals) dict abort
     for [l:var, l:val] in items(l:old_vals)
       call l:self.setwinvar(l:var, l:val)
     endfor
-    throw v:exception
+    throw typevim#Rethrow()
   endtry
   return l:old_vals
 endfunction
