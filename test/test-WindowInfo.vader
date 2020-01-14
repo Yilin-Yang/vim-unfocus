@@ -50,6 +50,8 @@ Then (Cleanup):
   close
 
 Execute (setwinvar() works in same window, different window, different tab):
+  tabnew
+  tabnew
   let info = MakeWindowInfo()
   call info.setwinvar("foo", "baz")
   AssertEqual "baz", info.getwinvar("foo")
@@ -59,11 +61,18 @@ Execute (setwinvar() works in same window, different window, different tab):
   AssertEqual "quoz", info.getwinvar("foo")
 
   tabnew
+  tabprev
+  tabprev
+  " close a tabpage before the tab in which our window is open, to make sure
+  " that the tabpagenr is shifting back down properly
+  tabclose
+  tabnext
+  tabnext
   call info.setwinvar("foo", "qing")
   AssertEqual "qing", info.getwinvar("foo")
-Then (Cleanup):
-  tabclose
-  close
+
+  " don't tabclose or close in cleanup, or else Vader's syntax highlighting
+  " will break
 
 Execute (GetVals() works in same window, different window, different tab):
   let info = MakeWindowInfo()
