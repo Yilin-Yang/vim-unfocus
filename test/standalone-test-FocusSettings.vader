@@ -87,17 +87,23 @@ Execute ("asymmetric" on_focus and on_unfocus settings work correctly):
   AssertEqual 1, &number
   AssertEqual 1, &relativenumber
 
+  " Unfocus() stashes values of number, relativenumber as "focused" values
   call fs.Unfocus(wininfo, g:settings)  " stash 1, 1
+  " Unfocus() only applies norelativenumber
   AssertEqual {'&number': 1, '&relativenumber': 0}, wininfo.GetVals(g:settings)
 
   set nonumber
   AssertEqual {'&number': 0, '&relativenumber': 0}, wininfo.GetVals(g:settings)
 
+  " Focus() stashes nonumber, norelativenumber as "unfocused",
+  " should restore 1, 1
   call fs.Focus(wininfo, g:settings)  " stash 0, 0
   AssertEqual {'&number': 1, '&relativenumber': 1}, wininfo.GetVals(g:settings)
 
+  " Unfocus() again, should stash 1, 1 as focused and restore 0, 0 from Focus()
   call fs.Unfocus(wininfo, g:settings)
   AssertEqual {'&number': 0, '&relativenumber': 0}, wininfo.GetVals(g:settings)
 
+  " Focus() again should restore 1, 1
   call fs.Focus(wininfo, g:settings)
   AssertEqual {'&number': 1, '&relativenumber': 1}, wininfo.GetVals(g:settings)
