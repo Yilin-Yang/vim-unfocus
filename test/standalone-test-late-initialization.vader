@@ -1,0 +1,197 @@
+Execute (Declare Helper Functions):
+  " Pop the *first* item from the given list and return it.
+  function! Pop(list) abort
+    let l:item = a:list[0]
+    unlet a:list[0]
+    return l:item
+  endfunction
+
+  " Return two dictionaries: one with items that only appear in {dict1},
+  " and the next with items that only appear in {dict2}.
+  function! Difference(dict1, dict2) abort
+    let l:only_in_1 = copy(a:dict1)
+    let l:only_in_2 = copy(a:dict2)
+    for l:key in keys(a:dict1)
+      if has_key(l:only_in_2, l:key)
+        unlet l:only_in_2[l:key]
+      endif
+    endfor
+    for l:key in keys(a:dict2)
+      if has_key(l:only_in_1, l:key)
+        unlet l:only_in_1[l:key]
+      endif
+    endfor
+    return [l:only_in_1, l:only_in_2]
+  endfunction
+
+  " Assert that the contents of the two given dictionaries are equal. If
+  " they aren't, print a useful error message.
+  function! AssertDictsEqual(expected, actual, winid, other) abort
+    let [l:absent, l:additional] = Difference(a:expected, a:actual)
+    let l:winid_str = printf(
+        \ 'winid: %s, tabpage: %s [%s]', a:winid, tabpagenr(), a:other)
+    if !empty(l:absent) || !empty(l:additional)
+      Assert 0, printf('mismatched dictionaries for %s, am missing: %s, got extra: %s',
+          \ l:winid_str, string(l:absent), string(l:additional))
+    endif
+    for [l:key, l:expected_val] in items(a:expected)
+      let l:actual_val = a:actual[l:key]
+      AssertEqual l:expected_val, l:actual_val,
+          \ printf("mismatch for setting %s in %s: got %s, expected %s",
+              \ l:key, l:winid_str, l:actual_val, l:expected_val)
+    endfor
+  endfunction
+
+  " Verify that the settings of a focused window have been set correctly.
+  function! CheckFocusedSettings(wininfo, initial_settings) abort
+    let l:expected = copy(g:on_focus)
+    call extend(l:expected, a:initial_settings, 'keep')
+
+    let l:cur_vars_and_vals = a:wininfo.GetVals(g:watched_settings)
+    call AssertDictsEqual(l:expected, l:cur_vars_and_vals, a:wininfo.winid, 'focused')
+  endfunction
+
+  " Verify that the settings of an unfocused window have been set correctly.
+  function! CheckUnfocusedSettings(wininfo, initial_settings) abort
+    let l:expected = copy(g:on_unfocus)
+    call extend(l:expected, a:initial_settings, 'force')
+
+    let l:cur_vars_and_vals = a:wininfo.GetVals(g:watched_settings)
+    call AssertDictsEqual(l:expected, l:cur_vars_and_vals, a:wininfo.winid, 'unfocused')
+  endfunction
+
+
+Execute (Setup):
+  let g:plugin = maktaba#plugin#Get('vim-unfocus')
+  " disable autocmds, build windows, reenable autocmds, make sure that
+  " focus/unfocus settings are populated correctly
+  call g:plugin.flags.plugin.Set({'autocmds': 0})
+
+  let g:on_focus = {
+      \ '&number': 1,
+      \ '&relativenumber': 1,
+      \ '&foldcolumn': 3,
+    \ }
+  let g:on_unfocus = {
+      \ '&number': 0,
+      \ '&relativenumber': 0,
+    \ }
+
+  call g:plugin.Flag(
+      \ 'to_set', {
+        \ 'on_unfocus': g:on_unfocus,
+        \ 'on_focus': g:on_focus,
+      \ })
+
+  let g:watched_settings = sort(['&number', '&relativenumber', '&foldcolumn'])
+
+  " Create a new window and initialize it with {settings_and_vals}; return a
+  " pair containing the corresponding @dict(WindowInfo) object, and the given
+  " {settings_and_vals}.
+  function! MakeWindowWith(settings_and_vals) abort
+    new
+    let l:wininfo = unfocus#WindowInfo#New(win_getid())
+    call l:wininfo.SetVals(a:settings_and_vals)
+    return [l:wininfo, a:settings_and_vals]
+  endfunction
+
+  let g:tabs_to_wins = {}
+  let g:kVaderTab = tabpagenr()
+
+  tabnew
+  let g:this_tab_nr = g:kVaderTab + 1
+  let g:this_tab = []
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 0, '&relativenumber': 1, '&foldcolumn': 2}))
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 1, '&relativenumber': 0, '&foldcolumn': 1}))
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 0, '&relativenumber': 0, '&foldcolumn': 1}))
+  let g:tabs_to_wins[g:this_tab_nr] = g:this_tab
+  unlet g:this_tab
+
+  tabnew
+  let g:this_tab_nr += 1
+  let g:this_tab = []
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 0, '&relativenumber': 1, '&foldcolumn': 2}))
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 0, '&relativenumber': 1, '&foldcolumn': 1}))
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 1, '&relativenumber': 0, '&foldcolumn': 10}))
+  let g:tabs_to_wins[g:this_tab_nr] = g:this_tab
+  unlet g:this_tab
+
+  tabnew
+  let g:this_tab_nr += 1
+  let g:this_tab = []
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 0, '&relativenumber': 1, '&foldcolumn': 2}))
+  call add(g:this_tab, MakeWindowWith(
+      \ {'&number': 0, '&relativenumber': 1, '&foldcolumn': 1}))
+  let [g:very_last_win, g:very_last_initial_settings] =
+      \ MakeWindowWith(
+          \ {'&number': 1, '&relativenumber': 0, '&foldcolumn': 10})
+  call add(g:this_tab, [g:very_last_win, g:very_last_initial_settings])
+  let g:tabs_to_wins[g:this_tab_nr] = g:this_tab
+  unlet g:this_tab
+
+
+Execute (Enable Autocmds):
+  " make sure that the last window is still open, to test registration of the
+  " currently active window
+  call g:very_last_win.Goto()
+  AssertEqual g:very_last_win.winid, win_getid()
+
+  " this should activate a callback that will register all open windows
+  call g:plugin.flags.plugin.Set({'autocmds': 1})
+
+
+Execute (Check Window Settings):
+  " focus each window, verify that its focused settings were set properly, and
+  " verify that the previously focused window had its unfocused settings set
+  " properly
+
+  " handle the very first window and very last windows as special cases;
+  " the last window should have remained focused when we reactivated autocmds,
+  " so its current window values should have been treated as "focused" settings
+  let g:tab_idx = g:kVaderTab + 1
+  let g:cur_wins_and_settings = g:tabs_to_wins[g:tab_idx]
+  let [g:cur_win, g:initial_settings] = Pop(g:cur_wins_and_settings)
+  let [g:first_win, g:first_initial_settings] = [g:cur_win, g:initial_settings]
+
+  " special case: first window and last window
+  call g:cur_win.Goto()
+  call CheckFocusedSettings(g:cur_win, g:initial_settings)
+
+  while has_key(g:tabs_to_wins, g:tab_idx)
+    let g:cur_wins_and_settings = g:tabs_to_wins[g:tab_idx]
+    while len(g:cur_wins_and_settings)
+      let g:last_win = g:cur_win
+      let g:last_initial_settings = g:initial_settings
+
+      let [g:cur_win, g:initial_settings] = Pop(g:cur_wins_and_settings)
+
+      call g:cur_win.Goto()
+      if g:cur_win isnot g:very_last_win
+        call CheckFocusedSettings(g:cur_win, g:initial_settings)
+      else
+        let g:expected = copy(g:on_focus)
+        call extend(g:expected, g:very_last_initial_settings, 'force')
+        call AssertDictsEqual(
+            \ g:expected, g:very_last_win.GetVals(g:watched_settings),
+            \ g:very_last_win.winid, 'focused')
+      endif
+      call CheckUnfocusedSettings(g:last_win, g:last_initial_settings)
+
+    endwhile
+    let g:tab_idx += 1
+  endwhile
+
+  " special case: last window
+  call g:first_win.Goto()
+  call CheckFocusedSettings(g:first_win, g:first_initial_settings)
+
+  let g:last_win = g:cur_win
+  let g:last_initial_settings = g:initial_settings
+  call CheckUnfocusedSettings(g:last_win, g:last_initial_settings)
