@@ -177,5 +177,19 @@ function! unfocus#WinIDExists(winid) abort
   if a:winid <# unfocus#FirstValidWinID()
     throw maktaba#error#BadValue("given number isn't a valid winid: %d", a:winid)
   endif
-  return winbufnr(a:winid) !=# -1
+  return s:WinIDExists(a:winid)
 endfunction
+if has('patch-8.1.0494') || has('nvim-0.4.0')
+  " patch 0494 fixes an issue where winbufnr() and other functions won't
+  " search other tabs for a given win-ID
+  "
+  " the has('patch-8.1.xxxx') syntax doesn't seem to work in neovim, so fall
+  " back on neovim major/minor version checks instead
+  function! s:WinIDExists(winid) abort
+    return winbufnr(a:winid) !=# -1
+  endfunction
+else
+  function! s:WinIDExists(winid) abort
+    return win_id2tabwin(a:winid) !=# [0, 0]
+  endfunction
+endif
