@@ -107,6 +107,14 @@ Appending callables to this flag may be finicky, since (outside of calls to
 |Flag.Set()|) maktaba flags are meant to be immutable. See |Flag.Get()| and
 |Flag.GetCopy()|; the latter function should be helpful for this purpose.
 
+
+                                            *vim-unfocus:enable_debug_logging*
+Whether to enable debug logging. When set to 1 or *v:true*, logging messages
+will be added to the vim-unfocus debug log, which can be opened with
+|unfocus#OpenLog()|.
+
+Default: 0 `
+
                                                 *vim-unfocus:plugin[autocmds]*
 When set to zero, disables vim-unfocus's autocommands; this essentially
 "deactivates" the plugin. Set to 1 to reenable.
@@ -126,6 +134,10 @@ Default: 1 `
 
 ==============================================================================
 FUNCTIONS                                              *vim-unfocus-functions*
+
+unfocus#OpenLog()                                          *unfocus#OpenLog()*
+  Open the vim-unfocus debug log in the current window. Also prints a warning
+  message if debug logging is not enabled.
 
 unfocus#WinVarFromID({winid}, {variable}, [default])  *unfocus#WinVarFromID()*
   Given a {winid}, return the value of {variable} within that window, or

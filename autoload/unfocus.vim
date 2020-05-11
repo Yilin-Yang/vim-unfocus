@@ -22,6 +22,28 @@ function! unfocus#IsFocused(winid) abort
 endfunction
 
 ""
+" Log the given message to the vim-unfocus debug log, if debug logging is
+" enabled.
+function! unfocus#Log(message) abort
+  if !s:f_ENABLE_DEBUG_LOGGING.Get()
+    return
+  endif
+  call unfocus#DebugLogger#Get().Log(a:message)
+endfunction
+let s:f_ENABLE_DEBUG_LOGGING = s:plugin.flags.enable_debug_logging
+
+""
+" @public
+" Open the vim-unfocus debug log in the current window. Also prints a warning
+" message if debug logging is not enabled.
+function! unfocus#OpenLog() abort
+  call unfocus#DebugLogger#Get().Show()
+  if !s:f_ENABLE_DEBUG_LOGGING.Get()
+    call maktaba#error#Warn('Debug logging for vim-unfocus is not enabled!')
+  endif
+endfunction
+
+""
 " Set {setting} (explicitly qualified with g:, b:, w:, &, etc.) to {Value},
 " returning its old value.
 "

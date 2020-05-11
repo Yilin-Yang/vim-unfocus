@@ -185,6 +185,7 @@ call s:plugin.flags.on_new_window.AddTranslator(
 " Appending callables to this flag may be finicky, since (outside of calls to
 " |Flag.Set()|) maktaba flags are meant to be immutable. See |Flag.Get()| and
 " |Flag.GetCopy()|; the latter function should be helpful for this purpose.
+"
 call s:plugin.Flag('ignore_if', [
     \ {winid ->
         \ maktaba#value#IsIn(
@@ -199,6 +200,12 @@ call s:plugin.Flag('ignore_if', [
 call s:plugin.flags.ignore_if.AddTranslator(
     \ s:EnsureThatAll(function('maktaba#ensure#IsFuncref')))
 
+""
+" Whether to enable debug logging. When set to 1 or *v:true*, logging messages
+" will be added to the vim-unfocus debug log, which can be opened with
+" @function(unfocus#OpenLog).
+"
+call s:plugin.Flag('enable_debug_logging', 0)
 
 "
 " plugin[] flags
