@@ -201,7 +201,7 @@ call s:plugin.flags.ignore_if.AddTranslator(
     \ s:EnsureThatAll(function('maktaba#ensure#IsFuncref')))
 
 ""
-" Whether to enable debug logging. When set to 1 or *v:true*, logging messages
+" Whether to enable debug logging. When set to 1 or |v:true|, logging messages
 " will be added to the vim-unfocus debug log, which can be opened with
 " @function(unfocus#OpenLog).
 "

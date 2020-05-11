@@ -34,12 +34,24 @@ function! s:GetTimestamp() abort
 endfunction
 
 ""
-" Log a message to the debug buffer.
-function! {s:prefix}Log(message) dict abort
+" Log a {message} to the debug buffer.
+"
+" {message} can be a format string. If any additional arguments are given,
+" then {message} and all arguments are passed to |printf()| before logging.
+function! {s:prefix}Log(message, ...) dict abort
   call s:CheckType(l:self)
   if maktaba#value#IsString(a:message)
-    let l:message = [a:message]
+    if a:0
+      let l:message = [call('printf', [a:message] + a:000)]
+    else
+      let l:message = [a:message]
+    endif
   elseif maktaba#value#IsList(a:message)
+    if a:0
+      throw maktaba#error#Failure(
+          \ 'unfocus: Cannot use list %s as format string with exprs %s',
+          \ a:message, a:000)
+    endif
     let l:message = a:message
   else
     throw maktaba#error#Failure(

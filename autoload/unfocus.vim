@@ -24,11 +24,11 @@ endfunction
 ""
 " Log the given message to the vim-unfocus debug log, if debug logging is
 " enabled.
-function! unfocus#Log(message) abort
+function! unfocus#Log(message, ...) abort
   if !s:f_ENABLE_DEBUG_LOGGING.Get()
     return
   endif
-  call unfocus#DebugLogger#Get().Log(a:message)
+  call call(unfocus#DebugLogger#Get().Log, [a:message] + a:000)
 endfunction
 let s:f_ENABLE_DEBUG_LOGGING = s:plugin.flags.enable_debug_logging
 
