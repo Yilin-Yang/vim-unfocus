@@ -11,7 +11,7 @@ function! {s:prefix}Get() abort
     let s:vim_unfocus_debug_logger = typevim#make#Class(
         \ s:typename, {
           \ 'buffer': typevim#Buffer#New({
-          \ 'bufname': 'vim-unfocus Debug Log',
+          \ 'bufname': 'vim-unfocus Debug Log ' . reltimestr(reltime()),
           \ }),
         \ 'Log': function(s:prefix.'Log'),
         \ 'Show': function(s:prefix.'Show'),
