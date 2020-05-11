@@ -107,6 +107,20 @@ Appending callables to this flag may be finicky, since (outside of calls to
 |Flag.Set()|) maktaba flags are meant to be immutable. See |Flag.Get()| and
 |Flag.GetCopy()|; the latter function should be helpful for this purpose.
 
+For instance, to add a function to ignore windows where `w:some_var` is 1, one
+could add the following to their |vimrc|:
+>
+  let g:unfocus = maktaba#plugin#Get('vim-unfocus')
+  function! IgnoreSomeVar1(winid) abort
+    return unfocus#WinVarFromID(a:winid)
+  endfunction
+  call g:unfocus.flags.ignore_if.Set(
+      \ add(g:unfocus.flags.ignore_if.GetCopy(),
+          \ function('IgnoreSomeVar1')))
+<
+
+Default: [ function('s:IsIgnoredBufType'), function('s:IsIgnoredBufHidden'), ]
+  `
 
                                             *vim-unfocus:enable_debug_logging*
 Whether to enable debug logging. When set to 1 or |v:true|, logging messages

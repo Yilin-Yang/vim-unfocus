@@ -11,7 +11,12 @@ Execute (Declare Helper Functions):
     call AssertSettingsEqual(l:expected, l:cur_vars_and_vals, a:wininfo.winid, 'focused')
   endfunction
 
-  " Verify that the settings of an unfocused window have been set correctly.
+  " Verify that the settings of an unfocused window have been set correctly
+  " after a late initialization.
+  "
+  " Late initialization of an unfocused window will "forcibly" set the focused
+  " settings for that window while *using its current settings values as its
+  " unfocused settings.*
   function! CheckUnfocusedSettings(wininfo, initial_settings) abort
     let l:expected = copy(g:on_unfocus)
     call extend(l:expected, a:initial_settings, 'force')
@@ -141,7 +146,9 @@ Execute (Check Window Settings):
 
   " handle the very first window and very last windows as special cases;
   " the last window should have remained focused when we reactivated autocmds,
-  " so its current window values should have been treated as "focused" settings
+  " so its current window values should have been treated as focused settings,
+  " while its unfocused settings should have been forcibly initialized to
+  " *exactly* match the user's unfocus settings.
   let g:tab_idx = g:kVaderTab + 1
   let g:cur_wins_and_settings = g:tabs_to_wins[g:tab_idx]
   let [g:cur_win, g:initial_settings] = Pop(g:cur_wins_and_settings)
@@ -181,4 +188,11 @@ Execute (Check Window Settings):
 
   let g:last_win = g:cur_win
   let g:last_initial_settings = g:initial_settings
-  call CheckUnfocusedSettings(g:last_win, g:last_initial_settings)
+
+  " as explained above, the user's unfocus settings "took priority"
+  " when the last window's FocusSettings were initialized
+  call AssertSettingsEqual(
+      \ extend(g:last_initial_settings, g:on_unfocus, 'force'),
+      \ g:last_win.GetVals(g:watched_settings),
+      \ g:last_win.winid,
+      \ 'unfocused')

@@ -1,0 +1,36 @@
+Include: Helpers.vader
+
+Execute (WindowHelpers: Setup):
+
+  " Create a new window and initialize it with {settings_and_vals}; return a
+  " pair containing the corresponding @dict(WindowInfo) object, and the given
+  " {settings_and_vals}.
+  function! MakeWindowWith(settings_and_vals) abort
+    new
+    let l:wininfo = unfocus#WindowInfo#New(win_getid())
+    call l:wininfo.SetVals(a:settings_and_vals)
+    return [l:wininfo, a:settings_and_vals]
+  endfunction
+
+  " Assert that the contents of the two given settings dictionaries are equal.
+  " If they aren't, print a useful error message.
+  function! AssertSettingsEqual(expected, actual, winid, other) abort
+    try
+      let [l:absent, l:additional] = Difference(a:expected, a:actual)
+      let l:winid_str = printf(
+          \ 'winid: %s, tabpage: %s [%s]', a:winid, tabpagenr(), a:other)
+      if !empty(l:absent) || !empty(l:additional)
+        Assert 0, printf('mismatched dictionaries for %s, am missing: %s, got extra: %s',
+            \ l:winid_str, string(l:absent), string(l:additional))
+      endif
+      for [l:key, l:expected_val] in items(a:expected)
+        let l:actual_val = a:actual[l:key]
+        AssertEqual l:expected_val, l:actual_val,
+            \ printf("mismatch for setting %s in %s: got %s, expected %s",
+                \ l:key, l:winid_str, l:actual_val, l:expected_val)
+      endfor
+    catch
+      call unfocus#Log('assertion failed! with '.v:exception)
+      throw typevim#Rethrow(v:exception)
+    endtry
+  endfunction

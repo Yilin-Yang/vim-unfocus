@@ -1,0 +1,34 @@
+Execute (Helpers: Declare General Helpers):
+
+  " Pop the *first* item from the given list and return it.
+  function! Pop(list) abort
+    let l:item = a:list[0]
+    unlet a:list[0]
+    return l:item
+  endfunction
+
+  " Return two dictionaries: one with items that only appear in {dict1},
+  " and the next with items that only appear in {dict2}.
+  function! Difference(dict1, dict2) abort
+    let l:only_in_1 = copy(a:dict1)
+    let l:only_in_2 = copy(a:dict2)
+    for l:key in keys(a:dict1)
+      if has_key(l:only_in_2, l:key)
+        unlet l:only_in_2[l:key]
+      endif
+    endfor
+    for l:key in keys(a:dict2)
+      if has_key(l:only_in_1, l:key)
+        unlet l:only_in_1[l:key]
+      endif
+    endfor
+    return [l:only_in_1, l:only_in_2]
+  endfunction
+
+  " Drop into the built-in vim debugger.
+  function! BreakNow() abort
+    breakadd func 2 BreakNow
+    return
+  endfunction
+
+  command! -nargs=0 Break call BreakNow()

@@ -54,11 +54,11 @@ endfunction
 " Construct a FocusSettings object for a presently unfocused window {winid},
 " leaving it unfocused, storing the {set_when_focused} values and using the
 " current values of the given settings are used to populate the
-" "set_when_unfocused" member dict
+" "set_when_unfocused" member dict.
 "
 " It is assumed that the {winid} passed into the FocusSettings constructor is
 " "not focused", i.e. the current setting values for the window are those
-" that the user wants to be set for an "unfocused" window..
+" that the user wants to be set for an "unfocused" window.
 function! unfocus#FocusSettings#FromUnfocused(wininfo, set_when_focused) abort
   return unfocus#WithLazyRedraw(
       \ function('s:FromUnfocused'), a:wininfo, a:set_when_focused)
@@ -151,6 +151,12 @@ function! unfocus#FocusSettings#Focus(wininfo_to_focus, to_set) dict abort
   call maktaba#ensure#IsList(a:to_set)
   let l:self.__set_when_unfocused = s:FocusUnfocusImpl(
       \ l:self, a:wininfo_to_focus, a:to_set, l:self.__set_when_focused)
+  call unfocus#Log([
+      \ printf('focused %d', a:wininfo_to_focus.winid),
+      \ printf('unfocused settings: %s', l:self.__set_when_unfocused),
+      \ printf('focused settings: %s', l:self.__set_when_focused),
+      \ expand('<sfile>')
+      \ ])
 endfunction
 
 ""
@@ -165,4 +171,10 @@ function! unfocus#FocusSettings#Unfocus(wininfo_to_unfocus, to_set) dict abort
   call maktaba#ensure#IsList(a:to_set)
   let l:self.__set_when_focused = s:FocusUnfocusImpl(
       \ l:self, a:wininfo_to_unfocus, a:to_set, l:self.__set_when_unfocused)
+  call unfocus#Log([
+      \ printf('unfocused %d', a:wininfo_to_unfocus.winid),
+      \ printf('unfocused settings: %s', l:self.__set_when_unfocused),
+      \ printf('focused settings: %s', l:self.__set_when_focused),
+      \ expand('<sfile>')
+      \ ])
 endfunction

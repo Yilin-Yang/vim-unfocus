@@ -127,14 +127,39 @@ let s:f_IGNORE_IF = s:plugin.flags.ignore_if
 " {focus_settings} for the new window {winid}, mark it as the last focused
 " window, and return 1. Else, return 0.
 function! unfocus#SwitchFocusIfDifferent(winid, focus_settings) abort
+  let l:ignore_if_preds = s:f_IGNORE_IF.Get()
+  for l:ShouldIgnore in l:ignore_if_preds
+    if l:ShouldIgnore(a:winid)
+      call unfocus#Log(
+          \ 'SwitchFocusIfDifferent ignoring winid %d because '
+            \ .'function says to ignore: %s',
+          \ a:winid, l:ShouldIgnore)
+      let s:we_ignored_last_win = 1
+      return 0
+    endif
+  endfor
+
   let l:last_focus_settings = s:unfocus_last_focused.focus_settings
   let l:last_window = s:unfocus_last_focused.window_info
 
-  if a:focus_settings is l:last_focus_settings
+  if a:focus_settings is l:last_focus_settings && !s:we_ignored_last_win
+    call unfocus#Log(
+        \ 'SwitchFocusIfDifferent ignoring winid %d because we just saw it',
+        \ a:winid)
+    return 0
+  elseif a:focus_settings is l:last_focus_settings && s:we_ignored_last_win
+    call unfocus#Log(
+        \ 'SwitchFocusIfDifferent doing nothing, because we toured some '
+          \ . 'windows to ignore, but returned to the "real" window we left, '
+          \ . '%d',
+        \ a:winid)
     return 0
   endif
 
   if !empty(l:last_window) && l:last_window.Exists()
+    call unfocus#Log(
+        \ 'SwitchFocusIfDifferent unfocusing last window, %d', l:last_window.winid
+        \ )
     call l:last_focus_settings.Unfocus(l:last_window, s:f_WATCHED_SETTINGS.Get())
   endif
 
@@ -142,12 +167,28 @@ function! unfocus#SwitchFocusIfDifferent(winid, focus_settings) abort
   let s:unfocus_last_focused.focus_settings = a:focus_settings
   let s:unfocus_last_focused.window_info = l:new_window
 
+  call unfocus#Log('SwitchFocusIfDifferent focusing window, %d', l:new_window.winid)
   call a:focus_settings.Focus(l:new_window, s:f_WATCHED_SETTINGS.Get())
 
   return 1
 endfunction
 let s:unfocus_last_focused = {'focus_settings': v:null, 'window_info': v:null}
+let s:we_ignored_last_win = 0
 let s:f_WATCHED_SETTINGS = s:plugin.flags.watched_settings
+let s:f_IGNORE_IF = s:plugin.flags.ignore_if
+
+""
+" Explicitly mark the given {window_info} and {focus_settings} as the most
+" recently focused window. Affects the behavior of
+" @function(unfocus#SwitchFocusIfDifferent), which uses the identity of the
+" "last focused window" to determine whether to unfocus the last window and
+" focus a new one.
+function! unfocus#MarkAsLastFocused(window_info, focus_settings) abort
+  let s:unfocus_last_focused = {
+      \ 'focus_settings': typevim#ensure#IsType(a:focus_settings, 'FocusSettings'),
+      \ 'window_info': typevim#ensure#IsType(a:window_info, 'WindowInfo'),
+      \ }
+endfunction
 
 ""
 " Return the current @dict(FocusSettings) used to track for the current

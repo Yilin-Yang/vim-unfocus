@@ -1,0 +1,145 @@
+Include: WindowHelpers.vader
+
+Execute (Declare Helpers):
+
+  function! AssertFocusState(wininfo, focused) abort
+    " sleep to allow autocommands to fire
+    call unfocus#Log('assert that %d '.(a:focused ? 'is' : "isn't").' focused',
+        \ a:wininfo.winid)
+    let l:actual = a:wininfo.GetVals(g:watched_settings)
+
+    let l:oracle = a:focused ? g:on_focus : g:on_unfocus
+    let l:string = 'is_'.(a:focused ? '' : 'un').'focused'
+
+    call AssertSettingsEqual(
+        \ l:oracle, l:actual, a:wininfo.winid, l:string)
+  endfunction
+
+  " Assert that a window is focused.
+  function! AssertIsFocused(wininfo) abort
+    call AssertFocusState(a:wininfo, 1)
+  endfunction
+
+  " Assert that a window is not focused.
+  function! AssertIsUnfocused(wininfo) abort
+    call AssertFocusState(a:wininfo, 0)
+  endfunction
+
+  function! MakeNoIgnoreWin(name, settings_and_vals) abort
+    let [l:wininfo, l:_] = MakeWindowWith(
+        \ extend({'bufname': a:name}, a:settings_and_vals))
+    call l:wininfo.SetVals({'&buftype': '', '&bufhidden': ''})
+    return [l:wininfo, l:_]
+  endfunction
+
+
+Execute (Setup):
+  let g:default_win = unfocus#WindowInfo#New(win_getid())
+
+  " if we stay in the original tab, vader.vim will reset our &buftype/etc.
+  " values for our test windows
+  tabnew
+  let g:plugin = maktaba#plugin#Get('vim-unfocus')
+
+  let g:on_focus = {'&foldcolumn': 5}
+  let g:on_unfocus = {'&foldcolumn': 0}
+  let g:watched_settings = ['&foldcolumn']
+  call g:plugin.Flag('to_set', {
+        \ 'on_focus': g:on_focus,
+        \ 'on_unfocus': g:on_unfocus,
+      \ })
+
+  " guarantee that the value of &foldcolumn reflects manipulation by our plugin
+  call g:plugin.Flag('on_new_window', 'inherit_from_current')
+  set foldcolumn=0
+
+  " no_ignore is an ordinary window, treated in the usual fashion by vim-unfocus
+  let [g:no_ignore, g:_] = MakeNoIgnoreWin('no_ignore', g:on_focus)
+  call g:no_ignore.SetVals({'&buftype': '', '&bufhidden': ''})
+  call AssertIsFocused(g:no_ignore)
+
+  " build other windows
+  let [g:no_ignore_alt, g:_] = MakeNoIgnoreWin('no_ignore_alt', g:on_unfocus)
+  let [g:should_ignore, g:_] = MakeWindowWith({'&buftype': 'nofile'})
+  let [g:should_later_ignore, g:_] = MakeWindowWith({'custom_ignore_flag': 1})
+
+  call g:no_ignore.Goto()
+  " call g:default_win.Goto()
+
+  " late-initialize window state
+  call g:plugin.Flag('plugin[autocmds]', 1)
+
+  " assert that setup worked correctly
+  call AssertIsFocused(g:no_ignore)
+  call AssertIsUnfocused(g:no_ignore_alt)
+
+Execute (swapping to an ignored window does nothing):
+  call unfocus#Log('swapping to an ignored window does nothing')
+  call unfocus#Log('before going to no_ignore, cur win %d', win_getid())
+  call g:no_ignore.Goto()
+  call unfocus#Log('before going to should_ignore')
+  call g:should_ignore.Goto()
+
+  call unfocus#Log('before asserts, no_ignore, cur win %d', win_getid())
+  call AssertIsFocused(g:no_ignore)
+  call unfocus#Log('before asserts, should_ignore')
+  call AssertIsUnfocused(g:should_ignore)
+  call unfocus#Log('after asserts')
+
+  call g:no_ignore.Goto()
+
+  call unfocus#Log('after goto no_ignore')
+  call AssertIsFocused(g:no_ignore)
+  call AssertIsUnfocused(g:should_ignore)
+
+Execute (leapfrogging from ignored to non-ignored triggers a change):
+  call unfocus#Log('leapfrogging from ignored to non-ignored triggers a change')
+  call unfocus#Log('goto no ignore')
+  call g:no_ignore.Goto()
+  call unfocus#Log('initial focused, no_ignore')
+  call AssertIsFocused(g:no_ignore)
+  call unfocus#Log('initial unfocused, no_ignore')
+  call AssertIsUnfocused(g:no_ignore_alt)
+
+  call unfocus#Log('goto should_ignore')
+  call g:should_ignore.Goto()
+
+  call unfocus#Log('goto no_ignore_alt')
+  " Break
+  call g:no_ignore_alt.Goto()
+
+  call unfocus#Log('assert no_ignore unfocused')
+  call AssertIsUnfocused(g:no_ignore)
+
+  call unfocus#Log('assert no_ignore_alt focused')
+  call AssertIsFocused(g:no_ignore_alt)
+
+Execute (users can add custom ignore-if conditions):
+  call unfocus#Log('users can add custom ignore-if conditions')
+  call g:no_ignore.Goto()
+  call AssertIsFocused(g:no_ignore)
+
+  call g:should_later_ignore.Goto()
+  call AssertIsFocused(g:should_later_ignore)
+
+  call unfocus#Log("haven't added new functor; have focused window to later ignore")
+
+  call g:no_ignore.Goto()
+  call AssertIsFocused(g:no_ignore)
+  call AssertIsUnfocused(g:should_later_ignore)
+
+  call unfocus#Log('adding custom ignore-if functor')
+  let g:flags = g:plugin.flags
+  call g:flags.ignore_if.Set(
+      \ add(g:flags.ignore_if.GetCopy(),
+          \ {winid -> unfocus#WinVarFromID(winid, 'custom_ignore_flag')}))
+
+  call unfocus#Log('switching into now-ignored window')
+  call g:should_later_ignore.Goto()
+  call AssertIsUnfocused(g:should_later_ignore)
+  call AssertIsFocused(g:no_ignore)
+
+  call unfocus#Log('switching back into focused window')
+  call g:no_ignore.Goto()
+  call AssertIsUnfocused(g:should_later_ignore)
+  call AssertIsFocused(g:no_ignore)

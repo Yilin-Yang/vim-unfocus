@@ -86,15 +86,17 @@ endfunction
 "
 " Return the retrieved FocusSettings object.
 "
-" May also take a [construct_as] parameter, which may be "to_unfocus" or
-" "default_unfocused": this controls behavior when the FocusSettings object
-" doesn't already exist. The former treats the {winid} as an already-focused
-" window to be unfocused; this stores the current watched setting values as
-" the window's focused settings. The latter treats the {winid} as a currently
-" unfocused window if {winid} is not the focused window, and stores the
-" current watched setting values as the window's unfocused settings; if
-" {winid} is the focused window, it treats the window as an already-focused
-" window.
+" May also take a [construct_as] parameter, which may be "to_unfocus",
+" "default_unfocused": this controls behavior when the
+" FocusSettings object doesn't already exist.
+"
+" - "to_unfocus" treats the {winid} as an already-focused window to be
+"   unfocused; this stores the current watched setting values as the window's
+"   focused settings.
+" - "default_unfocused" treats the {winid} as a currently unfocused window if
+"   {winid} is not the focused window, and stores the current watched setting
+"   values as the window's unfocused settings; if {winid} is the focused
+"   window, it treats the window as an already-focused window.
 "
 " @default construct_as=`"to_unfocus"`
 "
@@ -158,7 +160,16 @@ function! {s:prefix}AddUnseen() dict abort
   let l:tabinfos = gettabinfo()
   for l:tabinfo in l:tabinfos | for l:winid in l:tabinfo.windows
     try
-      call l:self.SettingsForWinID(l:winid, 'default_unfocused')
+      let l:focus_settings = l:self.SettingsForWinID(l:winid, 'default_unfocused')
+      if l:winid ==# win_getid()
+        " this is the currently open window; mark this as the last focused
+        " if we don't do this, then the next time we swap to an ignored
+        " window, and then swap back to this focused window, we'll
+        " erroneously focus *again*, clobbering the "unfocused settings" for
+        " this window
+        let l:window_info = unfocus#WindowInfo#New(l:winid)
+        call unfocus#MarkAsLastFocused(l:window_info, l:focus_settings)
+      endif
     catch /ERROR(NotFound)/
     endtry
   endfor | endfor

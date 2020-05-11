@@ -163,6 +163,18 @@ call s:plugin.flags.on_new_window.AddTranslator(
     \ s:EnsureIsIn(['inherit_from_current', 'use_focused_settings']))
 
 
+function! s:IsIgnoredBufType(winid) abort
+  return maktaba#value#IsIn(
+      \ unfocus#WinVarFromID(a:winid, '&buftype'),
+      \ ['nofile', 'quickfix', 'help'])
+endfunction
+
+function! s:IsIgnoredBufHidden(winid) abort
+  return maktaba#value#IsIn(
+      \ unfocus#WinVarFromID(a:winid, '&bufhidden'),
+      \ ['unload', 'delete', 'wipe'])
+endfunction
+
 ""
 " A list of callables; if any of these return a truthy value when given a
 " window's |winid| as a user switches between windows, then that window will
@@ -186,15 +198,21 @@ call s:plugin.flags.on_new_window.AddTranslator(
 " |Flag.Set()|) maktaba flags are meant to be immutable. See |Flag.Get()| and
 " |Flag.GetCopy()|; the latter function should be helpful for this purpose.
 "
+" For instance, to add a function to ignore windows where `w:some_var` is 1,
+" one could add the following to their |vimrc|:
+" >
+"   let g:unfocus = maktaba#plugin#Get('vim-unfocus')
+"   function! IgnoreSomeVar1(winid) abort
+"     return unfocus#WinVarFromID(a:winid)
+"   endfunction
+"   call g:unfocus.flags.ignore_if.Set(
+"       \ add(g:unfocus.flags.ignore_if.GetCopy(),
+"           \ function('IgnoreSomeVar1')))
+" <
+"
 call s:plugin.Flag('ignore_if', [
-    \ {winid ->
-        \ maktaba#value#IsIn(
-            \ unfocus#WinVarFromID(winid, '&buftype'),
-            \ ['nofile', 'quickfix', 'help'])
-        \ || maktaba#value#IsIn(
-            \ unfocus#WinVarFromID(winid, '&bufhidden'),
-            \ ['unload', 'delete', 'wipe'])
-      \ },
+    \ function('s:IsIgnoredBufType'),
+    \ function('s:IsIgnoredBufHidden'),
     \ ])
 " ensure that ignore_if contains only funcrefs
 call s:plugin.flags.ignore_if.AddTranslator(
