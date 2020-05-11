@@ -121,10 +121,8 @@ endfunction
 " split or by switching tabs.
 "
 " Each window keeps two settings dicts: settings to be set when focused, and
-" to be set when unfocused. The window's unfocused settings dict is always
-" initialized to be equal to the user's unfocus settings. The window's focused
-" settings dict is usually initialized to be equal to the user's focus
-" settings.
+" to be set when unfocused. These are usually initialized the user's focus
+" settings and unfocus settings.
 "
 " When focusing an unfocused window, the current values of all of the watched
 " settings for that window are stashed as that window's unfocused settings,
@@ -218,12 +216,28 @@ call s:plugin.Flag('ignore_if', [
 call s:plugin.flags.ignore_if.AddTranslator(
     \ s:EnsureThatAll(function('maktaba#ensure#IsFuncref')))
 
+
+
+function! s:EnableLoggingOnlyIfSupported(new_val) abort
+  if !has('nvim') && !has('patch-8.1.0037')
+    throw maktaba#error#NotImplemented(
+        \ 'Cannot enable debug logging without nvim or patch 8.1.0037!')
+  endif
+  return a:new_val
+endfunction
+
 ""
 " Whether to enable debug logging. When set to 1 or |v:true|, logging messages
 " will be added to the vim-unfocus debug log, which can be opened with
 " @function(unfocus#OpenLog).
 "
+" Debug logging requires nvim, or a version of vim with patch 8.1.0037.
+" If these conditions aren't met, it will not be possible to change this flag.
+"
 call s:plugin.Flag('enable_debug_logging', 0)
+call s:plugin.flags.enable_debug_logging.AddTranslator(
+    \ function('s:EnableLoggingOnlyIfSupported'))
+
 
 "
 " plugin[] flags

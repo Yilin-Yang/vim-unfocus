@@ -51,9 +51,8 @@ unfocus a window is to leave the window, such as by opening a new split or by
 switching tabs.
 
 Each window keeps two settings dicts: settings to be set when focused, and to
-be set when unfocused. The window's unfocused settings dict is always
-initialized to be equal to the user's unfocus settings. The window's focused
-settings dict is usually initialized to be equal to the user's focus settings.
+be set when unfocused. These are usually initialized the user's focus settings
+and unfocus settings.
 
 When focusing an unfocused window, the current values of all of the watched
 settings for that window are stashed as that window's unfocused settings, and
@@ -126,6 +125,9 @@ Default: [ function('s:IsIgnoredBufType'), function('s:IsIgnoredBufHidden'), ]
 Whether to enable debug logging. When set to 1 or |v:true|, logging messages
 will be added to the vim-unfocus debug log, which can be opened with
 |unfocus#OpenLog()|.
+
+Debug logging requires nvim, or a version of vim with patch 8.1.0037. If these
+conditions aren't met, it will not be possible to change this flag.
 
 Default: 0 `
 
